@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}My Profile | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}My Profile{% endblock %}
+{% block content %}
+<div class="page-heading student-page-heading">
+  <span class="eyebrow">STUDENT PORTAL</span>
+  <h1>My Profile</h1>
+  <p>Academic enrollment details are read-only.</p>
+</div>
+
+<div class="student-profile-layout">
+  <section class="panel student-profile-card">
+    <div class="student-profile-head">
+      <div class="student-profile-avatar">{{ user.username|slice:':1'|upper }}</div>
+      <div><small>Student account</small><h2>{{ user.get_full_name|default:user.username }}</h2><span>{{ user.username }}</span></div>
+    </div>
+    <div class="student-profile-fields">
+      <div><span>Student name</span><strong>{{ user.get_full_name|default:'—' }}</strong></div>
+      <div><span>Registration number</span><strong>{{ user.username }}</strong></div>
+      <div><span>Programme</span><strong>{% if membership %}{{ membership.class_group.programme.name }}{% else %}—{% endif %}</strong>{% if membership %}<small>{{ membership.class_group.programme.code }}</small>{% endif %}</div>
+      <div><span>Class</span><strong>{% if membership %}{{ membership.class_group.name }}{% else %}—{% endif %}</strong>{% if membership %}<small>{{ membership.class_group.code }}</small>{% endif %}</div>
+      <div><span>Academic term</span><strong>{% if membership %}{{ membership.term.name }}{% else %}—{% endif %}</strong></div>
+      <div><span>Assigned subjects</span><strong>{{ assigned_subject_count }}</strong></div>
+    </div>
+  </section>
+
+  <aside class="panel student-account-card">
+    <span class="eyebrow">ACCOUNT SECURITY</span>
+    <h2>Password</h2>
+    <p>You can change your login password. Academic enrollment information cannot be edited from the student portal.</p>
+    <a class="btn btn-primary" href="{% url 'password_change' %}">Change password</a>
+  </aside>
+</div>
+{% endblock %}

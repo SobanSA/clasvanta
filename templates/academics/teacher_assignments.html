@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Teacher assignments | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Academic setup / Teacher assignments{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <span class="eyebrow">TEACHING ASSIGNMENTS</span>
+  <h1>Assign teacher to subject & class</h1>
+  <p>Assign a teacher manually when the CSV is incomplete. New matching subject+teacher sections are merged across classes automatically.</p>
+</div>
+
+<section class="panel teacher-assignment-panel">
+  <form method="post" class="stack-form teacher-assignment-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="assign">
+    <div class="form-grid-3 teacher-assignment-grid">
+      <div class="assignment-field">
+        <label>Class</label>
+        <select name="class_group" required>
+          <option value="">Select class</option>
+          {% for g in groups %}<option value="{{ g.pk }}">{{ g.programme.code }} · {{ g.code }} — {{ g.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="assignment-field">
+        <label>Subject</label>
+        <select name="subject" required data-searchable-subject>
+          <option value="">Select subject</option>
+          {% for s in subjects %}<option value="{{ s.pk }}" data-name="{{ s.name }}" data-code="{{ s.code }}">{{ s.name }} — {{ s.code }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="assignment-field">
+        <label>Teacher</label>
+        <select name="lecturer" required data-searchable-teacher>
+          <option value="">Select teacher</option>
+          {% for l in lecturers %}<option value="{{ l.pk }}" data-name="{{ l.get_full_name|default:l.first_name|default:l.username }}" data-code="{{ l.username }}">{{ l.get_full_name|default:l.first_name|default:l.username }} — {{ l.username }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" {% if not active_term %}disabled{% endif %}>Assign teacher</button>
+  </form>
+</section>
+
+<section class="panel teacher-current-sections">
+  <div class="panel-head">
+    <div>
+      <h2>Current subject sections</h2>
+      <p class="help-text">Changing a teacher here changes the complete merged section shown in the Classes field.</p>
+    </div>
+  </div>
+
+  <div class="teacher-section-table-wrap">
+    <table class="data-table teacher-section-table">
+      <thead><tr><th>Subject</th><th>Classes</th><th>Section</th><th>Teacher</th><th></th></tr></thead>
+      <tbody>
+      {% for o in offerings %}
+        <form id="a{{ o.pk }}" method="post">{% csrf_token %}<input type="hidden" name="action" value="update_section_teacher"><input type="hidden" name="offering" value="{{ o.pk }}"></form>
+        <tr>
+          <td><strong>{{ o.subject.name }}</strong><small>{{ o.subject.code }}</small></td>
+          <td>{{ o.class_codes_display }}</td>
+          <td><input form="a{{ o.pk }}" name="section_code" value="{{ o.section_code }}"></td>
+          <td><select form="a{{ o.pk }}" name="lecturer" required><option value="">Select teacher</option>{% for l in lecturers %}<option value="{{ l.pk }}" {% if o.lecturer_id == l.pk %}selected{% endif %}>{{ l.get_full_name|default:l.first_name|default:l.username }} — {{ l.username }}</option>{% endfor %}</select></td>
+          <td><button form="a{{ o.pk }}" class="btn btn-small">Save</button></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="empty-cell">No subject sections yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="teacher-section-cards" aria-label="Current subject sections">
+    {% for o in offerings %}
+      <article class="teacher-section-card">
+        <div class="teacher-section-card-head">
+          <div>
+            <h3>{{ o.subject.name }}</h3>
+            <p>{{ o.subject.code }}</p>
+          </div>
+          {% if o.class_groups.count > 1 %}<span class="status-pill done">Merged</span>{% endif %}
+        </div>
+        <div class="teacher-section-card-classes">
+          <span>Classes</span>
+          <strong>{{ o.class_codes_display }}</strong>
+        </div>
+        <form method="post" class="teacher-section-card-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_section_teacher">
+          <input type="hidden" name="offering" value="{{ o.pk }}">
+          <div class="teacher-section-card-field">
+            <label for="section-{{ o.pk }}">Section</label>
+            <input id="section-{{ o.pk }}" name="section_code" value="{{ o.section_code }}">
+          </div>
+          <div class="teacher-section-card-field">
+            <label for="lecturer-{{ o.pk }}">Teacher</label>
+            <select id="lecturer-{{ o.pk }}" name="lecturer" required>
+              <option value="">Select teacher</option>
+              {% for l in lecturers %}<option value="{{ l.pk }}" {% if o.lecturer_id == l.pk %}selected{% endif %}>{{ l.get_full_name|default:l.first_name|default:l.username }} — {{ l.username }}</option>{% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-primary teacher-section-save">Save changes</button>
+        </form>
+      </article>
+    {% empty %}
+      <div class="empty-state">No subject sections yet.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ app_branding.app_name }} — Setup{% endblock %}
+{% block content %}
+<section class="hero">
+  <span class="eyebrow">INITIAL SETUP</span>
+  <h1>Attendance Management System</h1>
+  <p>Django is running on Plesk. The student, lecturer and admin modules are being set up.</p>
+  <div class="actions"><a class="button" href="{% url 'admin:index' %}">Open administrator panel</a></div>
+</section>
+<section class="features" aria-label="Planned modules">
+  <article><strong>Students</strong><p>Class-based imports and attendance viewing.</p></article>
+  <article><strong>Lecturers</strong><p>Daily lectures, master and individual attendance switches.</p></article>
+  <article><strong>Fines</strong><p>Subject-wise absence limits and automatic charges.</p></article>
+</section>
+{% endblock %}

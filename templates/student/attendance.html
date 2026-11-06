@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}My Attendance | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}My Attendance{% endblock %}
+{% block content %}
+<div class="page-heading student-page-heading">
+  <span class="eyebrow">STUDENT PORTAL</span>
+  <h1>My Attendance</h1>
+  <p>{% if membership %}{{ membership.class_group.code }} · {{ membership.term.name }}{% else %}No active enrollment{% endif %}</p>
+</div>
+
+{% if not membership %}
+<div class="panel empty-state student-empty-state"><strong>No active class enrollment</strong><p>Attendance will appear here after you are enrolled in an active term.</p></div>
+{% else %}
+<div class="metric-grid student-portal-metrics attendance-overview-metrics">
+  <article class="metric-card"><span>Overall attendance</span><strong>{% if summary.percentage != None %}{{ summary.percentage }}%{% else %}—{% endif %}</strong><small>{{ summary.present }} attended / {{ summary.total }} held</small></article>
+  <article class="metric-card"><span>Present</span><strong>{{ summary.present }}</strong><small>Held classes attended</small></article>
+  <article class="metric-card"><span>Absent</span><strong>{{ summary.absent }}</strong><small>Held classes missed</small></article>
+  <article class="metric-card"><span>Subjects needing attention</span><strong>{{ summary.warning_count }}</strong><small>Near/beyond absence allowance</small></article>
+</div>
+
+<div class="student-info-note">Your denominator includes <strong>Held classes only</strong>. Scheduled-but-unmarked and Cancelled classes are not counted.</div>
+
+<div class="section-heading"><div><h2>Attendance by subject</h2><p>{{ allowed_absences }} allowed absence{{ allowed_absences|pluralize }} per subject under the current fine policy.</p></div></div>
+<div class="student-attendance-list">
+  {% for row in subjects %}
+  <details class="portal-subject-card {% if row.warning_level == 'danger' %}subject-danger{% elif row.warning_level == 'warning' %}subject-warning{% endif %}">
+    <summary>
+      <div class="portal-subject-identity"><small>{{ row.offering.subject.code }}</small><strong>{{ row.offering.subject.name }}</strong><span>{{ row.present }} attended / {{ row.total }} held</span></div>
+      <div class="portal-subject-result"><strong>{% if row.percentage != None %}{{ row.percentage }}%{% else %}—{% endif %}</strong><small>Tap for history</small></div>
+    </summary>
+    <div class="portal-subject-body">
+      <div class="progress-track"><div class="progress-fill" style="width: {{ row.percentage|default:0 }}%"></div></div>
+      <div class="student-stat-strip">
+        <div><span>Present</span><strong>{{ row.present }}</strong></div>
+        <div><span>Absent</span><strong>{{ row.absent }}</strong></div>
+        <div><span>Held</span><strong>{{ row.total }}</strong></div>
+        <div><span>Allowed left</span><strong>{{ row.allowed_remaining }}</strong></div>
+      </div>
+      <div class="student-subject-message {{ row.warning_level }}"><strong>{{ row.warning_text }}</strong>{% if row.fine_balance %}<span>Fine due: Rs {{ row.fine_balance|floatformat:0 }}</span>{% endif %}</div>
+
+      <div class="student-history-heading"><strong>Held-class history</strong><span>{{ row.history|length }} class{{ row.history|length|pluralize }}</span></div>
+      <div class="student-history-list">
+        {% for item in row.history %}
+        <div class="student-history-row">
+          <div><strong>{{ item.date|date:'D, j M Y' }}</strong><small>Lecture {{ item.lecture_number }} · {{ item.source }}</small></div>
+          <span class="student-mark {% if item.status == 'P' %}present{% else %}absent{% endif %}">{{ item.status_label }}</span>
+        </div>
+        {% empty %}
+        <div class="student-history-empty">No Held classes have attendance recorded for you in this subject yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </details>
+  {% empty %}
+  <div class="panel empty-state">No subjects have been assigned to your class yet.</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

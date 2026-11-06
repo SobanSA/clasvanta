@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Lecture assignments | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Academic setup / Lecture assignments{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/lecture_picker.css' %}?v=254">
+<script defer src="{% static 'js/lecture_picker.js' %}?v=253"></script>
+{% endblock %}
+{% block content %}
+<div class="page-heading heading-row"><div><span class="eyebrow">TIMETABLE MAPPING</span><h1>Lecture assignments</h1><p>Assign only the weekday and lecture number — no start or end times.</p></div><a href="{% url 'lecturers_manage' %}" class="btn btn-soft">Manage lecturers →</a></div>
+{% if not active_term %}<div class="alert alert-error">Activate an academic term before assigning lecture numbers.</div>{% endif %}
+<div class="metric-grid schedule-metrics">
+ <article class="metric-card compact"><span>Subject sections</span><strong>{{ readiness.total }}</strong><small>Active term</small></article>
+ <article class="metric-card compact"><span>Ready</span><strong>{{ readiness.ready }}</strong><small>Teacher and lecture assigned</small></article>
+ <article class="metric-card compact"><span>Missing lecturer</span><strong>{{ readiness.missing_teacher }}</strong></article>
+ <article class="metric-card compact"><span>Missing lecture</span><strong>{{ readiness.missing_schedule }}</strong><small>{{ readiness.inactive_teacher }} inactive teacher(s) · {{ readiness.conflict_sections }} conflict section(s)</small></article>
+</div>
+<section class="panel course-slot-panel"><div class="panel-head"><div><h2>Add a lecture slot</h2><p class="help-text">Merged sections require one schedule entry, which covers all their linked classes.</p></div></div>
+<form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="add"><div class="form-grid-3 lecture-slot-grid">
+ <div class="lecture-slot-field course-picker-field" data-course-picker>
+  <label id="course-picker-label" for="offering-select">Subject section</label>
+  {# Native HTML select stays functional when JavaScript is unavailable; its submitted value is unchanged. #}
+  <select id="offering-select" class="course-picker-native" name="offering" required>
+    <option value="">Select course</option>
+    {% for o in offerings %}
+    <option value="{{ o.pk }}">{{ o.subject.name }} · {{ o.class_codes_display }} · {% if o.lecturer and o.lecturer.get_full_name %}{{ o.lecturer.get_full_name }}{% else %}Lecturer not assigned / no name{% endif %}</option>
+    {% endfor %}
+  </select>
+  <div class="course-picker-enhanced" data-course-picker-ui hidden>
+    <button class="course-picker-trigger" type="button" data-picker-trigger
+            aria-haspopup="listbox" aria-expanded="false" aria-controls="course-picker-popup"
+            aria-labelledby="course-picker-label course-picker-display">
+      <span class="course-picker-trigger-content">
+        <strong id="course-picker-display" data-picker-display>Select course</strong>
+        <span data-picker-summary>Search by course name, class or lecturer name</span>
+      </span>
+      <span class="course-picker-chevron" aria-hidden="true">▾</span>
+    </button>
+    <div class="course-picker-popup" data-picker-popup id="course-picker-popup" hidden>
+      <div class="course-picker-search-wrap">
+        <label for="course-picker-search" class="course-picker-search-label">Search subject sections</label>
+        <input id="course-picker-search" type="search" data-picker-search
+               placeholder="Search course, class or lecturer…" autocomplete="off"
+               role="combobox" aria-autocomplete="list" aria-expanded="true"
+               aria-controls="course-picker-results" aria-describedby="course-picker-count">
+        <small id="course-picker-count" class="course-picker-count" data-picker-count aria-live="polite"></small>
+      </div>
+      <div class="course-picker-results" role="listbox" id="course-picker-results" aria-label="Available course sections" data-picker-results>
+        {% for o in offerings %}
+        <button type="button" role="option" tabindex="-1" aria-selected="false"
+                id="course-picker-option-{{ o.pk }}" class="course-picker-option" data-picker-option
+                data-id="{{ o.pk }}" data-search="{{ o.subject.name }} {{ o.subject.code }} {{ o.class_codes_display }} {% if o.lecturer %}{{ o.lecturer.get_full_name }} {{ o.lecturer.username }}{% endif %}">
+          <span class="course-picker-title">{{ o.subject.name }}</span>
+          <span class="course-picker-details"><span>{{ o.subject.code }}</span><span aria-hidden="true"> · </span><span>{{ o.class_codes_display }}</span><span aria-hidden="true"> · </span><span>{% if o.lecturer and o.lecturer.get_full_name %}{{ o.lecturer.get_full_name }}{% elif o.lecturer %}Lecturer name not entered{% else %}Lecturer not assigned{% endif %}</span>{% if o.lecturer %}<span aria-hidden="true"> · </span><span>ID: {{ o.lecturer.username }}</span>{% endif %}</span>
+          {% if o.class_count > 1 %}<span class="course-picker-merged">Merged section · {{ o.class_count }} classes</span>{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+      <p class="course-picker-empty" data-picker-empty hidden>No matching courses. Try a different name or class.</p>
+    </div>
+  </div>
+  <small class="course-picker-help">Choose by full course name, not codes.</small>
+ </div>
+ <div class="lecture-slot-field"><label for="lecture-slot-weekday">Day</label><select id="lecture-slot-weekday" name="weekday" required>{% for value,label in days %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+ <div class="lecture-slot-field"><label for="lecture-slot-number">Lecture number</label><input id="lecture-slot-number" type="number" min="1" max="20" name="lecture_number" value="1" required></div>
+ </div><button class="btn btn-primary" {% if not active_term %}disabled{% endif %}>Add lecture assignment</button></form></section>
+<section class="panel lecture-results-panel" data-course-list>
+  <div class="panel-head lecture-list-head">
+    <div><h2>Assignment verification</h2><p class="help-text">Every section needs an active lecturer and at least one day + lecture-number combination.</p></div>
+  </div>
+  <div class="lecture-list-tools" data-course-list-tools hidden>
+    <label for="verification-course-search">Find a course or teacher</label>
+    <div class="lecture-list-search-line">
+      <input id="verification-course-search" type="search" data-course-list-search placeholder="Search course name, code, class, teacher name or ID…" autocomplete="off">
+      <span class="lecture-list-count" data-course-list-count role="status" aria-live="polite"></span>
+    </div>
+  </div>
+  <div class="course-list-card-list" data-course-list-items>
+    {% for o in offerings %}
+    <article class="course-list-card" data-course-list-item data-search="{{ o.subject.name }} {{ o.subject.code }} {{ o.section_code }} {{ o.class_codes_display }} {% if o.lecturer %}{{ o.lecturer.get_full_name }} {{ o.lecturer.username }}{% endif %} {% if o.is_ready %}ready{% else %}needs setup{% endif %}">
+      <div class="course-list-card-main">
+        <div class="course-list-card-title-row">
+          <h3 class="course-list-card-title">{{ o.subject.name }}</h3>
+          {% if o.is_ready %}<span class="status-pill done">Ready</span>{% else %}<span class="status-pill absent-pill">Needs setup</span>{% endif %}
+        </div>
+        <p class="course-list-card-meta"><strong>Course:</strong> {{ o.subject.code }} <span aria-hidden="true">·</span> <strong>Class:</strong> {{ o.class_codes_display }}</p>
+        <p class="course-list-card-meta"><strong>Teacher:</strong>
+          {% if o.lecturer %}{% if o.lecturer.get_full_name %}{{ o.lecturer.get_full_name }}{% else %}Name not entered{% endif %}
+            <span aria-hidden="true">·</span> <strong>Teacher ID:</strong> {{ o.lecturer.username }}
+          {% else %}<span class="warning-text">Not assigned</span>{% endif %}
+        </p>
+        {% if o.class_count > 1 %}<span class="course-picker-merged">Merged section · {{ o.class_count }} classes</span>{% endif %}
+      </div>
+      <div class="course-list-card-aside">
+        <span class="course-list-card-label">Assigned lectures</span>
+        <div class="lecture-pill-group">{% for slot in o.display_schedules %}<span class="schedule-pill">{{ slot.get_weekday_display }} · Lecture {{ slot.lecture_number }}</span>{% empty %}<span class="warning-text">No lectures</span>{% endfor %}</div>
+        {% if not o.is_ready %}<p class="course-list-card-warning">{% if o.missing_teacher %}Assign a teacher. {% endif %}{% if o.inactive_teacher %}Teacher inactive. {% endif %}{% if o.missing_schedule %}Assign a lecture number. {% endif %}{% if o.has_conflict %}Resolve timetable clash.{% endif %}</p>{% endif %}
+      </div>
+    </article>
+    {% empty %}<p class="course-list-card-empty">No subject sections for the active term.</p>{% endfor %}
+  </div>
+  <p class="course-list-card-empty" data-course-list-empty hidden>No matching courses. Try another course or teacher name.</p>
+</section>
+{% if conflicts %}<section class="panel"><div class="panel-head"><h2 class="danger-text">Existing timetable conflicts ({{ conflicts|length }})</h2></div><div class="table-scroller"><table class="data-table"><thead><tr><th>Slot</th><th>First section</th><th>Second section</th><th>Issue</th></tr></thead><tbody>{% for item in conflicts %}<tr><td>{{ item.first.get_weekday_display }} · L{{ item.first.lecture_number }}</td><td>{{ item.first.class_subject.subject.code }} · {{ item.first.class_subject.class_codes_display }}</td><td>{{ item.second.class_subject.subject.code }} · {{ item.second.class_subject.class_codes_display }}</td><td><span class="warning-text">{{ item.reason }}</span></td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
+<section class="panel lecture-results-panel" data-course-list>
+  <div class="panel-head lecture-list-head">
+    <div><h2>Weekly lecture slots</h2><p class="help-text">Edit the day or lecture number below. Clash validation and historical attendance preservation are unchanged.</p></div>
+  </div>
+  <div class="lecture-list-tools" data-course-list-tools hidden>
+    <label for="weekly-course-search">Find an assigned lecture</label>
+    <div class="lecture-list-search-line">
+      <input id="weekly-course-search" type="search" data-course-list-search placeholder="Search course, teacher, teacher ID, day or lecture…" autocomplete="off">
+      <span class="lecture-list-count" data-course-list-count role="status" aria-live="polite"></span>
+    </div>
+  </div>
+  <div class="course-list-card-list" data-course-list-items>
+    {% for s in schedules %}
+    <article class="course-list-card course-list-card--editable" data-course-list-item data-search="{{ s.class_subject.subject.name }} {{ s.class_subject.subject.code }} {{ s.class_subject.class_codes_display }} {% if s.class_subject.lecturer %}{{ s.class_subject.lecturer.get_full_name }} {{ s.class_subject.lecturer.username }}{% endif %} {{ s.get_weekday_display }} Lecture {{ s.lecture_number }} L{{ s.lecture_number }}">
+      <div class="course-list-card-main">
+        <h3 class="course-list-card-title">{{ s.class_subject.subject.name }}</h3>
+        <p class="course-list-card-meta"><strong>Course:</strong> {{ s.class_subject.subject.code }} <span aria-hidden="true">·</span> <strong>Class:</strong> {{ s.class_subject.class_codes_display }}</p>
+        <p class="course-list-card-meta"><strong>Teacher:</strong>
+          {% if s.class_subject.lecturer %}{% if s.class_subject.lecturer.get_full_name %}{{ s.class_subject.lecturer.get_full_name }}{% else %}Name not entered{% endif %}
+          <span aria-hidden="true">·</span> <strong>Teacher ID:</strong> {{ s.class_subject.lecturer.username }}
+          {% else %}<span class="warning-text">Not assigned</span>{% endif %}
+        </p>
+        {% if s.class_subject.class_count > 1 %}<span class="course-picker-merged">Merged section · {{ s.class_subject.class_count }} classes</span>{% endif %}
+      </div>
+      <div class="course-list-card-aside">
+        <form id="w{{ s.pk }}" method="post" class="course-list-card-edit-form">
+          {% csrf_token %}<input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="{{ s.pk }}">
+          <div class="lecture-edit-row">
+            <div class="lecture-edit-field"><label for="weekday-{{ s.pk }}">Day</label><select id="weekday-{{ s.pk }}" name="weekday">{% for value,label in days %}<option value="{{ value }}" {% if s.weekday == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="lecture-edit-field"><label for="number-{{ s.pk }}">Lecture</label><input id="number-{{ s.pk }}" type="number" min="1" max="20" name="lecture_number" value="{{ s.lecture_number }}" required></div>
+          </div>
+        </form>
+        <div class="lecture-edit-actions">
+          <button type="submit" class="btn btn-small" form="w{{ s.pk }}">Save changes</button>
+          <form method="post" class="course-list-card-delete-form">
+            {% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ s.pk }}">
+            <button class="btn btn-small btn-danger" type="submit" data-confirm="Remove this lecture assignment? Past attendance records will be preserved.">Remove</button>
+          </form>
+        </div>
+      </div>
+    </article>
+    {% empty %}<p class="course-list-card-empty">No lecture slots assigned yet.</p>{% endfor %}
+  </div>
+  <p class="course-list-card-empty" data-course-list-empty hidden>No assigned lectures match your search.</p>
+</section>
+{% endblock %}

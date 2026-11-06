@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% block title %}Reports | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Reports{% endblock %}
+{% block content %}
+<div class="page-heading heading-row report-page-heading">
+  <div>
+    <span class="eyebrow">SCHEDULES &amp; REPORTS</span>
+    <h1>{{ report_label }}</h1>
+    <p>Held means attendance was submitted. Cancelled and Not Marked classes never count as Held.</p>
+  </div>
+  <div class="hero-actions report-export-actions">
+    <a class="btn btn-secondary" href="{{ xlsx_url }}">Export Excel</a>
+    <button class="btn btn-secondary" type="button" onclick="window.print()">Print / Save PDF</button>
+  </div>
+</div>
+
+<section class="panel report-filter-panel no-print">
+  <form method="get" class="report-filter-grid" id="reportFilters">
+    <div class="report-filter-field">
+      <label for="reportType">Report</label>
+      <select id="reportType" name="report">
+        {% for value,label in report_types %}<option value="{{ value }}" {% if report_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="report-filter-field">
+      <label for="reportMonth">Month</label>
+      <input id="reportMonth" type="month" name="month" value="{{ month_value }}">
+    </div>
+    <div class="report-filter-field">
+      <label for="reportProgramme">Programme</label>
+      <select id="reportProgramme" name="programme">
+        <option value="">All programmes</option>
+        {% for item in programmes %}<option value="{{ item.pk }}" {% if programme_id == item.pk %}selected{% endif %}>{{ item.code }} — {{ item.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="report-filter-field">
+      <label for="reportClass">Class</label>
+      <select id="reportClass" name="class">
+        <option value="">All classes</option>
+        {% for item in classes %}<option value="{{ item.pk }}" {% if class_id == item.pk %}selected{% endif %}>{{ item.code }} — {{ item.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="report-filter-field">
+      <label for="reportSubject">Subject</label>
+      <select id="reportSubject" name="subject">
+        <option value="">All subjects</option>
+        {% for item in subjects %}<option value="{{ item.pk }}" {% if subject_id == item.pk %}selected{% endif %}>{{ item.name }} · {{ item.code }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="report-filter-field">
+      <label for="reportLecturer">Lecturer</label>
+      <select id="reportLecturer" name="lecturer">
+        <option value="">All lecturers</option>
+        {% for item in lecturers %}<option value="{{ item.pk }}" {% if lecturer_id == item.pk %}selected{% endif %}>{{ item.get_full_name|default:item.username }} · {{ item.username }}</option>{% endfor %}
+      </select>
+    </div>
+    {% if report_type == 'daily' %}
+    <div class="report-filter-field">
+      <label for="reportDate">Date</label>
+      <input id="reportDate" type="date" name="date" value="{{ data.selected_date|date:'Y-m-d' }}">
+    </div>
+    {% endif %}
+    {% if report_type == 'student' %}
+    <div class="report-filter-field report-student-search-field">
+      <label for="studentReportSearch">Student search</label>
+      <input id="studentReportSearch" type="search" name="student_q" value="{{ data.student_q }}" placeholder="Registration number or student name">
+      {% if data.student %}<input type="hidden" name="student" value="{{ data.student.pk }}">{% endif %}
+    </div>
+    {% endif %}
+    <div class="report-filter-actions">
+      <button class="btn btn-primary" type="submit">Apply filters</button>
+      <a class="btn btn-secondary" href="{% url 'reports' %}?report={{ report_type }}">Reset</a>
+    </div>
+  </form>
+</section>
+
+<div class="report-print-meta print-only">
+  <strong>{{ app_branding.app_name }} — {{ report_label }}</strong>
+  <span>{{ month_start|date:"j F Y" }} to {{ report_end|date:"j F Y" }}</span>
+  {% if selected_programme %}<span>Programme: {{ selected_programme.code }}</span>{% endif %}
+  {% if selected_class %}<span>Class: {{ selected_class.code }}</span>{% endif %}
+  {% if selected_subject %}<span>Subject: {{ selected_subject.name }}</span>{% endif %}
+  {% if selected_lecturer %}<span>Lecturer: {{ selected_lecturer.get_full_name|default:selected_lecturer.username }}</span>{% endif %}
+</div>
+
+{% if report_type == 'compliance' %}
+<div class="report-definition-note"><strong>Historical timetable note:</strong> Scheduled / Not Marked reconstruction uses the recurring timetable currently stored for each subject section. Dated Held and Cancelled sessions remain exact.</div>
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Scheduled</span><strong>{{ data.summary.scheduled }}</strong><small>Regular + approved make-up</small></div>
+  <div class="metric-card compact"><span>Held</span><strong>{{ data.summary.held }}</strong><small>{{ data.summary.completion }}% completion</small></div>
+  <div class="metric-card compact"><span>Cancelled</span><strong>{{ data.summary.cancelled }}</strong></div>
+  <div class="metric-card compact"><span>Not Marked</span><strong>{{ data.summary.pending }}</strong></div>
+  <div class="metric-card compact"><span>Make-up</span><strong>{{ data.summary.makeup }}</strong></div>
+</div>
+
+<div class="report-two-column">
+<section class="panel">
+  <div class="panel-head"><div><h2>Class compliance</h2><p class="help-text">Merged lectures count once for each linked class.</p></div><strong>{{ data.class_rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Class</th><th>Programme</th><th>Scheduled</th><th>Held</th><th>Cancelled</th><th>Not Marked</th><th>Make-up</th><th>Completion</th></tr></thead><tbody>
+    {% for row in data.class_rows %}<tr><td><strong>{{ row.class_group.code }}</strong><small>{{ row.class_group.name }}</small></td><td>{{ row.class_group.programme.code }}</td><td>{{ row.scheduled }}</td><td>{{ row.held }}</td><td>{{ row.cancelled }}</td><td>{{ row.pending }}</td><td>{{ row.makeup }}</td><td><strong>{{ row.completion }}%</strong></td></tr>{% empty %}<tr><td colspan="8" class="empty-cell">No class schedule occurrences match these filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>Lecturer compliance</h2><p class="help-text">A merged-section lecture counts once for its lecturer.</p></div><strong>{{ data.teacher_rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Lecturer</th><th>Scheduled</th><th>Held</th><th>Cancelled</th><th>Not Marked</th><th>Make-up</th><th>Completion</th></tr></thead><tbody>
+    {% for row in data.teacher_rows %}<tr><td>{% if row.lecturer %}<strong>{{ row.lecturer.get_full_name|default:row.lecturer.username }}</strong><small>{{ row.lecturer.username }}</small>{% else %}<span class="warning-text">Unassigned</span>{% endif %}</td><td>{{ row.scheduled }}</td><td>{{ row.held }}</td><td>{{ row.cancelled }}</td><td>{{ row.pending }}</td><td>{{ row.makeup }}</td><td><strong>{{ row.completion }}%</strong></td></tr>{% empty %}<tr><td colspan="7" class="empty-cell">No lecturer schedule occurrences match these filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+</div>
+<section class="panel report-detail-panel">
+  <div class="panel-head"><div><h2>Occurrence register</h2><p class="help-text">{{ month_start|date:"j F" }} – {{ report_end|date:"j F Y" }}</p></div><strong>{{ data.rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Date</th><th>Lecture</th><th>Subject</th><th>Class</th><th>Lecturer</th><th>Type</th><th>Status</th></tr></thead><tbody>
+    {% for row in data.rows %}<tr><td>{{ row.date|date:"D, j M Y" }}</td><td><strong>L{{ row.lecture_number }}</strong></td><td><strong>{{ row.offering.subject.name }}</strong><small>{{ row.offering.subject.code }}</small></td><td>{{ row.offering.class_codes_display }}</td><td>{% if row.offering.lecturer %}{{ row.offering.lecturer.get_full_name|default:row.offering.lecturer.username }}{% else %}<span class="warning-text">Unassigned</span>{% endif %}</td><td>{% if row.source == 'MAKEUP' %}<span class="status-pill makeup-pill">Make-up</span>{% else %}Regular{% endif %}</td><td>{% if row.state == 'HELD' %}<span class="status-pill done">Held</span>{% elif row.state == 'CANCELLED' %}<span class="status-pill status-cancelled">Cancelled</span>{% elif row.state == 'SCHEDULED' %}<span class="status-pill">Scheduled</span>{% else %}<span class="status-pill status-pending">Not Marked</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="empty-cell">No schedule occurrences in this reporting period.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+{% elif report_type == 'daily' %}
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Expected</span><strong>{{ data.summary.scheduled }}</strong></div>
+  <div class="metric-card compact"><span>Held</span><strong>{{ data.summary.held_all }}</strong></div>
+  <div class="metric-card compact"><span>Cancelled</span><strong>{{ data.summary.cancelled_all }}</strong></div>
+  <div class="metric-card compact"><span>Not Marked</span><strong>{{ data.summary.pending }}</strong></div>
+  <div class="metric-card compact"><span>Additional</span><strong>{{ data.summary.additional }}</strong><small>Manual historical sessions</small></div>
+</div>
+<section class="panel">
+  <div class="panel-head"><div><h2>{{ data.selected_date|date:"l, j F Y" }}</h2><p class="help-text">Regular timetable and approved make-up classes, plus any manually-created session found for the date.</p></div><strong>{{ data.rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Lecture</th><th>Subject</th><th>Class</th><th>Lecturer</th><th>Type</th><th>Status</th><th>Present</th><th>Absent</th></tr></thead><tbody>
+  {% for row in data.rows %}<tr><td><strong>L{{ row.lecture_number }}</strong></td><td><strong>{{ row.offering.subject.name }}</strong><small>{{ row.offering.subject.code }}</small></td><td>{{ row.offering.class_codes_display }}</td><td>{% if row.offering.lecturer %}{{ row.offering.lecturer.get_full_name|default:row.offering.lecturer.username }}{% else %}Unassigned{% endif %}</td><td>{% if row.source == 'MAKEUP' %}<span class="status-pill makeup-pill">Make-up</span>{% elif row.source == 'ADDITIONAL' %}<span class="status-pill">Additional</span>{% else %}Regular{% endif %}</td><td>{{ row.state_label }}</td><td>{{ row.present }}</td><td>{{ row.absent }}</td></tr>{% empty %}<tr><td colspan="8" class="empty-cell">No classes match this date and filter set.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+{% elif report_type == 'class' %}
+{% if data.selected_class %}
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Students</span><strong>{{ data.summary.students }}</strong></div>
+  <div class="metric-card compact"><span>Scheduled</span><strong>{{ data.summary.scheduled }}</strong></div>
+  <div class="metric-card compact"><span>Held</span><strong>{{ data.summary.held }}</strong><small>{{ data.summary.completion }}% schedule completion</small></div>
+  <div class="metric-card compact"><span>Attendance</span><strong>{{ data.summary.attendance_rate }}%</strong><small>{{ data.summary.present_marks }} present / {{ data.summary.absent_marks }} absent marks</small></div>
+</div>
+<section class="panel">
+  <div class="panel-head"><div><h2>{{ data.selected_class.code }} — subject performance</h2><p class="help-text">Each subject uses Held sessions only for student attendance marks.</p></div><strong>{{ data.subject_rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Subject</th><th>Scheduled</th><th>Held</th><th>Cancelled</th><th>Not Marked</th><th>Make-up</th><th>Present</th><th>Absent</th><th>Attendance</th></tr></thead><tbody>
+  {% for row in data.subject_rows %}<tr><td><strong>{{ row.offering.subject.name }}</strong><small>{{ row.offering.subject.code }}</small></td><td>{{ row.scheduled }}</td><td>{{ row.held }}</td><td>{{ row.cancelled }}</td><td>{{ row.pending }}</td><td>{{ row.makeup }}</td><td>{{ row.present }}</td><td>{{ row.absent }}</td><td><strong>{{ row.attendance_rate }}%</strong></td></tr>{% empty %}<tr><td colspan="9" class="empty-cell">No assigned subjects match these filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>Student attendance</h2><p class="help-text">Monthly Held-class marks for this class.</p></div><strong>{{ data.student_rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Registration</th><th>Student</th><th>Present</th><th>Absent</th><th>Held marks</th><th>Attendance</th></tr></thead><tbody>
+  {% for row in data.student_rows %}<tr><td><strong>{{ row.student.user.username }}</strong></td><td>{{ row.student.user.get_full_name|default:row.student.user.username }}</td><td>{{ row.present }}</td><td>{{ row.absent }}</td><td>{{ row.held_marks }}</td><td><strong>{{ row.attendance_rate }}%</strong></td></tr>{% empty %}<tr><td colspan="6" class="empty-cell">No enrolled students found for this class.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% else %}<div class="alert alert-error">Select a class to generate the Class Attendance report.</div>{% endif %}
+
+{% elif report_type == 'student' %}
+{% if not data.student %}
+<section class="panel report-student-results-panel">
+  <div class="panel-head"><div><h2>Find a student</h2><p class="help-text">Search results remain collapsed until you type a registration number or student name.</p></div></div>
+  {% if data.student_q %}<div class="report-student-results">
+    {% for membership in data.search_results %}<a class="report-student-result" href="?report=student&month={{ month_value }}&student={{ membership.student.pk }}{% if programme_id %}&programme={{ programme_id }}{% endif %}{% if class_id %}&class={{ class_id }}{% endif %}{% if subject_id %}&subject={{ subject_id }}{% endif %}{% if lecturer_id %}&lecturer={{ lecturer_id }}{% endif %}"><span><strong>{{ membership.student.user.get_full_name|default:membership.student.user.username }}</strong><small>{{ membership.student.user.username }}</small></span><span>{{ membership.class_group.code }}</span></a>{% empty %}<div class="empty-cell">No student matches “{{ data.student_q }}”.</div>{% endfor %}
+  </div>{% else %}<div class="report-search-placeholder">Enter a registration number or student name above, then Apply filters.</div>{% endif %}
+</section>
+{% else %}
+<div class="report-selected-student panel"><div><span class="eyebrow">SELECTED STUDENT</span><h2>{{ data.student.user.get_full_name|default:data.student.user.username }}</h2><p>{{ data.student.user.username }} · {{ data.membership.class_group.code }} · {{ data.membership.class_group.programme.name }}</p></div><a class="btn btn-secondary no-print" href="{% url 'reports' %}?report=student&month={{ month_value }}">Change student</a></div>
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Held marks</span><strong>{{ data.summary.held }}</strong></div>
+  <div class="metric-card compact"><span>Present</span><strong>{{ data.summary.present }}</strong></div>
+  <div class="metric-card compact"><span>Absent</span><strong>{{ data.summary.absent }}</strong></div>
+  <div class="metric-card compact"><span>Attendance</span><strong>{{ data.summary.attendance_rate }}%</strong></div>
+</div>
+<section class="panel"><div class="panel-head"><div><h2>Held-class history</h2><p class="help-text">Pending and Cancelled classes are excluded from attendance totals.</p></div><strong>{{ data.history|length }}</strong></div><div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Date</th><th>Lecture</th><th>Subject</th><th>Type</th><th>Status</th><th>Lecturer</th></tr></thead><tbody>
+{% for item in data.history %}<tr><td>{{ item.session.lecture_date|date:"D, j M Y" }}</td><td>L{{ item.session.lecture_number }}</td><td><strong>{{ item.offering.subject.name }}</strong><small>{{ item.offering.subject.code }}</small></td><td>{{ item.source }}</td><td>{% if item.record.status == 'P' %}<span class="status-pill done">Present</span>{% else %}<span class="status-pill status-cancelled">Absent</span>{% endif %}</td><td>{% if item.offering.lecturer %}{{ item.offering.lecturer.get_full_name|default:item.offering.lecturer.username }}{% else %}Unassigned{% endif %}</td></tr>{% empty %}<tr><td colspan="6" class="empty-cell">No Held-class attendance records in this period.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endif %}
+
+{% elif report_type == 'defaulters' %}
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Students</span><strong>{{ data.summary.students }}</strong></div>
+  <div class="metric-card compact"><span>Subject breaches</span><strong>{{ data.summary.rows }}</strong></div>
+  <div class="metric-card compact"><span>Subjects affected</span><strong>{{ data.summary.subjects }}</strong></div>
+</div>
+<div class="report-definition-note"><strong>Defaulter rule:</strong> cumulative absences from the academic term start through {{ report_end|date:"j F Y" }} exceed the term's configured allowed absences. Monthly absences are shown separately for context.</div>
+<section class="panel"><div class="panel-head"><div><h2>Absence defaulters</h2><p class="help-text">Uses the existing Fine Policy absence allowance; no separate threshold is invented here.</p></div><strong>{{ data.rows|length }}</strong></div><div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Registration</th><th>Student</th><th>Subject</th><th>Class</th><th>Allowed</th><th>Term absent</th><th>Excess</th><th>Month absent</th><th>Attendance</th><th>Fine due</th></tr></thead><tbody>
+{% for row in data.rows %}<tr><td><strong>{{ row.registration }}</strong></td><td>{{ row.student_name }}</td><td><strong>{{ row.offering.subject.name }}</strong><small>{{ row.offering.subject.code }}</small></td><td>{{ row.offering.class_codes_display }}</td><td>{{ row.allowed }}</td><td>{{ row.term_absent }}</td><td><strong class="warning-text">+{{ row.excess }}</strong></td><td>{{ row.month_absent }}</td><td>{{ row.attendance_rate }}%</td><td>Rs {{ row.fine_balance|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="10" class="empty-cell">No students exceed the configured absence allowance for these filters.</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+{% elif report_type == 'fines' %}
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Charges</span><strong>Rs {{ data.summary.charges|floatformat:2 }}</strong></div>
+  <div class="metric-card compact"><span>Adjustments</span><strong>Rs {{ data.summary.adjustments|floatformat:2 }}</strong></div>
+  <div class="metric-card compact"><span>Payments</span><strong>Rs {{ data.summary.payments|floatformat:2 }}</strong></div>
+  <div class="metric-card compact"><span>Net movement</span><strong>Rs {{ data.summary.net|floatformat:2 }}</strong></div>
+  <div class="metric-card compact"><span>Outstanding</span><strong>Rs {{ data.summary.outstanding_total|floatformat:2 }}</strong><small>{{ data.summary.outstanding_count }} subject balance(s)</small></div>
+</div>
+<section class="panel"><div class="panel-head"><div><h2>Ledger transactions</h2><p class="help-text">Transactions created during the selected reporting period.</p></div><strong>{{ data.entries|length }}</strong></div><div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Date/time</th><th>Registration</th><th>Student</th><th>Subject</th><th>Class</th><th>Kind</th><th>Amount</th><th>Note</th><th>Actor</th></tr></thead><tbody>
+{% for item in data.entries %}<tr><td>{{ item.created_at|date:"j M Y H:i" }}</td><td><strong>{{ item.student.user.username }}</strong></td><td>{{ item.student.user.get_full_name|default:item.student.user.username }}</td><td>{{ item.class_subject.subject.name }}</td><td>{{ item.class_subject.class_codes_display }}</td><td>{{ item.get_kind_display }}</td><td class="{% if item.amount > 0 %}warning-text{% endif %}">Rs {{ item.amount|floatformat:2 }}</td><td>{{ item.note|default:"—" }}</td><td>{% if item.actor %}{{ item.actor.get_full_name|default:item.actor.username }}{% else %}System{% endif %}</td></tr>{% empty %}<tr><td colspan="9" class="empty-cell">No fine-ledger transactions in this reporting period.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="panel"><div class="panel-head"><div><h2>Current outstanding balances</h2><p class="help-text">All-time ledger balance for the filtered subject sections.</p></div><strong>{{ data.balances|length }}</strong></div><div class="table-scroller"><table class="data-table report-table"><thead><tr><th>Registration</th><th>Student</th><th>Subject</th><th>Class</th><th>Outstanding</th></tr></thead><tbody>
+{% for row in data.balances %}<tr><td><strong>{{ row.student__user__username }}</strong></td><td>{{ row.student__user__first_name }} {{ row.student__user__last_name }}</td><td>{{ row.class_subject__subject__name }}</td><td>{% if row.offering %}{{ row.offering.class_codes_display }}{% endif %}</td><td><strong>Rs {{ row.balance|floatformat:2 }}</strong></td></tr>{% empty %}<tr><td colspan="5" class="empty-cell">No outstanding balances match these filters.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endif %}
+{% endblock %}

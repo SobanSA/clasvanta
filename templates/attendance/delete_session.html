@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block title %}Delete Held Session | {{ app_branding.app_name }}{% endblock %}{% block crumb %}Attendance{% endblock %}
+{% block content %}
+<div class="page-heading"><a class="back-link" href="{% url 'session_detail' session.pk %}">← Back to held session</a><span class="eyebrow">SUPER ADMIN ONLY</span><h1>Delete Held Session</h1><p>This is a destructive attendance correction. It removes the Held session and its active student marks, then recalculates affected fines.</p></div>
+<div class="alert alert-error"><strong>This is not the same as cancelling a class.</strong><br>After deletion, this scheduled occurrence becomes <strong>Pending / Not Marked</strong> again. An approved make-up remains approved but becomes unmarked. A permanent deletion audit snapshot is retained.</div>
+<div class="attendance-day-summary attendance-day-summary-4">
+  <div class="metric-card compact"><span>Date</span><strong>{{ session.lecture_date|date:"d M" }}</strong><small>{{ session.lecture_date|date:"Y" }}</small></div>
+  <div class="metric-card compact"><span>Lecture</span><strong>L{{ session.lecture_number }}</strong><small>{{ offering.subject.short_name }}</small></div>
+  <div class="metric-card compact"><span>Present</span><strong>{{ present_count }}</strong><small>Will be removed</small></div>
+  <div class="metric-card compact"><span>Absent</span><strong>{{ absent_count }}</strong><small>Fines recalculated</small></div>
+</div>
+<section class="panel delete-session-panel">
+  <div class="panel-head"><div><h2>{{ offering.subject.name }}</h2><p class="help-text">{{ offering.subject.code }} · {{ offering.class_codes_display }} · {{ offering.term.name }}</p></div><span class="status-pill done">Held</span></div>
+  <div class="delete-session-facts">
+    <div><span>Originally submitted by</span><strong>{{ session.submitted_by.get_full_name|default:session.submitted_by.username }}</strong><small>{{ session.submitted_at|date:'d M Y, H:i' }}</small></div>
+    <div><span>Student records</span><strong>{{ records|length }}</strong><small>{{ present_count }} present · {{ absent_count }} absent</small></div>
+  </div>
+  <form method="post" class="delete-session-form" onsubmit="return confirm('Permanently delete this Held session and remove its active attendance records?');">{% csrf_token %}
+    <div class="form-field"><label for="deleteReason">Reason for deleting this Held session</label><textarea id="deleteReason" name="reason" rows="3" maxlength="400" required placeholder="Example: Attendance was submitted against the wrong lecture/session"></textarea><small class="help-text">Required. This reason is stored permanently in the deletion audit.</small></div>
+    <label class="delete-confirm-check"><input type="checkbox" required> <span>I understand this Held session will be removed and the occurrence will return to Pending / Not Marked.</span></label>
+    <div class="row-actions"><a class="btn btn-secondary" href="{% url 'session_detail' session.pk %}">Keep session</a><button class="btn btn-danger" type="submit">Delete Held Session</button></div>
+  </form>
+</section>
+{% endblock %}

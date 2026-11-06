@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Academic setup | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Academic setup{% endblock %}
+{% block content %}
+<div class="page-heading heading-row">
+  <div><span class="eyebrow">ACADEMIC CONFIGURATION</span><h1>Academic setup</h1><p>Your normal workflow should be CSV-first. Manual forms are kept only for small corrections.</p></div>
+  <a href="{% url 'bulk_import' 'structure' %}" class="btn btn-primary">⇧ Upload academic setup CSV</a>
+</div>
+
+<section class="panel import-hero">
+  <div>
+    <span class="eyebrow">RECOMMENDED WORKFLOW</span>
+    <h2>Set up the entire term from one file</h2>
+    <p>Create/update programmes → semester classes → subjects → merged subject sections → teachers → assignments → lecture numbers in one validated upload.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="{% url 'bulk_import' 'structure' %}">Academic setup CSV</a>
+    <a class="btn btn-secondary" href="{% url 'bulk_import' 'students' %}">Students CSV</a>
+  </div>
+</section>
+
+{% if new_lecturer %}<div class="alert alert-success"><strong>Lecturer credentials — copy now:</strong> Username <code>{{ new_lecturer.username }}</code> · Temporary password <code>{{ new_lecturer.password }}</code></div>{% endif %}
+{% if active_term %}<div class="term-banner"><span class="status-pill done">Active term</span><strong>{{ active_term.name }}</strong><span>{{ active_term.start_date }} to {{ active_term.end_date }}</span></div>{% else %}<div class="alert alert-error">No active term yet. The Academic setup CSV can create and activate one automatically.</div>{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Programmes</h2><p class="help-text">Edit directly here for a one-off correction. Bulk changes should come from the CSV.</p></div></div>
+  <div class="table-scroller">{% for p in programmes %}<form id="programme-{{ p.pk }}" method="post">{% csrf_token %}<input type="hidden" name="action" value="edit_programme"><input type="hidden" name="id" value="{{ p.pk }}"></form>{% endfor %}<table class="data-table editable-table"><thead><tr><th>Code</th><th>Programme name</th><th></th></tr></thead><tbody>
+  {% for p in programmes %}<tr><td><input form="programme-{{ p.pk }}" name="code" value="{{ p.code }}" required></td><td><input form="programme-{{ p.pk }}" name="name" value="{{ p.name }}" required></td><td class="right"><button form="programme-{{ p.pk }}" class="btn btn-small" type="submit">Save</button></td></tr>{% empty %}<tr><td colspan="3" class="empty-cell">No programmes yet. Upload the Academic setup CSV.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Current semester classes</h2><p class="help-text">A programme can have Semester 1 + 3 or Semester 2 + 4 classes in the same term.</p></div></div>
+  <div class="table-scroller">{% for group in groups %}<form id="class-{{ group.pk }}" method="post">{% csrf_token %}<input type="hidden" name="action" value="edit_class"><input type="hidden" name="id" value="{{ group.pk }}"></form>{% endfor %}<table class="data-table editable-table"><thead><tr><th>Class code</th><th>Name</th><th>Programme</th><th>Semester</th><th>Subjects</th><th></th></tr></thead><tbody>
+  {% for group in groups %}<tr><td><input form="class-{{ group.pk }}" name="code" value="{{ group.code }}" required></td><td><input form="class-{{ group.pk }}" name="name" value="{{ group.name }}" required></td><td><select form="class-{{ group.pk }}" name="programme" required>{% for p in programmes %}<option value="{{ p.pk }}" {% if p.pk == group.programme_id %}selected{% endif %}>{{ p.code }}</option>{% endfor %}</select></td><td><input form="class-{{ group.pk }}" type="number" min="1" max="16" name="semester_number" value="{{ group.semester_number }}" required></td><td>{{ group.subject_sections.count }}</td><td class="right"><button form="class-{{ group.pk }}" class="btn btn-small" type="submit">Save</button></td></tr>{% empty %}<tr><td colspan="6" class="empty-cell">No classes in the active term yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Subject-based sections & teacher assignments</h2><p class="help-text">Teaching sections are based on subject + teacher. The same subject taught by the same teacher across multiple classes is merged automatically.</p></div></div>
+  <div class="table-scroller"><table class="data-table"><thead><tr><th>Class</th><th>Subject</th><th>Section</th><th>Teacher</th><th>Weekly lectures</th></tr></thead><tbody>
+  {% for o in offerings %}<tr><td><strong>{{ o.class_codes_display }}</strong><small>{% if o.class_count > 1 %}Merged across {{ o.class_count }} classes{% else %}Single class{% endif %}</small></td><td><strong>{{ o.subject.code }} — {{ o.subject.short_name }}</strong><small>{{ o.subject.name }}</small></td><td>{{ o.section_code }}</td><td>{% if o.lecturer %}{{ o.lecturer.get_full_name|default:o.lecturer.username }}<small>{{ o.lecturer.username }}</small>{% else %}<span class="muted">Unassigned</span>{% endif %}</td><td>{% for s in o.weekly_schedules.all %}<span class="schedule-pill">{{ s.get_weekday_display }} · L{{ s.lecture_number }}</span>{% empty %}<span class="muted">No schedule</span>{% endfor %}</td></tr>{% empty %}<tr><td colspan="5" class="empty-cell">No subject sections yet. Use the Academic setup CSV.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+<details class="setup-card manual-tools"><summary><span class="setup-card-icon">+</span><div><strong>Manual tools</strong><small>Use only for small one-off additions</small></div><span class="chev">⌄</span></summary><div class="setup-card-body manual-grid">
+  <form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="programme"><h3>Add programme</h3><label>Code</label><input name="code" placeholder="BSCS" required><label>Name</label><input name="name" placeholder="BS Computer Science" required><button class="btn btn-secondary" type="submit">Add programme</button></form>
+  <form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="term"><h3>Create/activate term</h3><label>Name</label><input name="name" placeholder="Fall 2026" required><div class="form-pair"><div><label>Start</label><input type="date" name="start_date" required></div><div><label>End</label><input type="date" name="end_date" required></div></div><button class="btn btn-secondary" type="submit">Create term</button></form>
+  <form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="class"><h3>Add class</h3><label>Class code</label><input name="code" placeholder="BSCS-S1" required><label>Class name</label><input name="name" placeholder="Semester 1"><label>Programme</label><select name="programme" required><option value="">Select programme</option>{% for p in programmes %}<option value="{{ p.pk }}">{{ p.code }}</option>{% endfor %}</select><label>Semester</label><input type="number" min="1" max="16" name="semester_number" value="1" required><button class="btn btn-secondary" type="submit" {% if not active_term %}disabled{% endif %}>Add class</button></form>
+  <form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="subject"><h3>Add subject</h3><label>Code</label><input name="code" placeholder="CS101" required><label>Name</label><input name="name" placeholder="Programming Fundamentals" required><label>Short name</label><input name="short_name" placeholder="PF" required><button class="btn btn-secondary" type="submit">Add subject</button></form>
+</div></details>
+
+<details class="setup-card"><summary><span class="setup-card-icon">⚙</span><div><strong>Attendance & fine settings</strong><small>Institute-wide lecturer working hours and current-term fine policy</small></div><span class="chev">⌄</span></summary><div class="setup-card-body settings-two-col">
+<form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="hours"><h3>Lecturer editing window (PKT)</h3><div class="form-pair"><div><label>Start</label><input name="working_start" type="time" value="{{ hours.working_start|time:'H:i'|default:'08:00' }}" required></div><div><label>End</label><input name="working_end" type="time" value="{{ hours.working_end|time:'H:i'|default:'16:00' }}" required></div></div><button class="btn btn-primary" type="submit">Update working hours</button></form>
+<form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="action" value="fine_policy"><h3>Fine policy</h3><label>Free absences per subject</label><input type="number" name="allowed_absences" min="0" value="{{ fine_policy.allowed_absences|default:2 }}" required><label>Fine per extra absence (Rs)</label><input type="number" step="0.01" min="0" name="rate_per_extra_absence" value="{{ fine_policy.rate_per_extra_absence|default:500 }}" required><button class="btn btn-primary" type="submit" {% if not active_term %}disabled{% endif %}>Save fine policy</button></form>
+</div></details>
+{% endblock %}

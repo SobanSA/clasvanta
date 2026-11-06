@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Branding settings | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Settings / Branding{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <span class="eyebrow">SUPER ADMIN ONLY</span>
+  <h1>Application branding</h1>
+  <p>Rename the application for your institution without changing source code. Updates apply across sign-in, navigation, page titles and reports.</p>
+</div>
+
+<section class="panel settings-branding-panel">
+  <div class="panel-head">
+    <div><h2>Brand identity</h2><p class="help-text">The default public identity is Clasvanta — Academic Attendance &amp; Management.</p></div>
+  </div>
+  <form method="post" class="stack-form branding-form">
+    {% csrf_token %}
+    <div class="form-field">
+      <label for="appName">Application name</label>
+      <input id="appName" name="app_name" maxlength="80" value="{{ branding.app_name }}" required autocomplete="off">
+      <small class="help-text">Shown in the sidebar, sign-in page, browser titles, footer and report headers.</small>
+    </div>
+    <div class="form-field">
+      <label for="appSubtitle">Subtitle</label>
+      <input id="appSubtitle" name="subtitle" maxlength="120" value="{{ branding.subtitle }}" required autocomplete="off">
+      <small class="help-text">A short institutional/product description shown beneath the application name.</small>
+    </div>
+    <div class="brand-preview" aria-label="Brand preview">
+      <span class="brand-mark">{{ branding.app_name|slice:":1"|upper }}</span>
+      <span><strong>{{ branding.app_name }}</strong><small>{{ branding.subtitle }}</small></span>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save branding</button>
+    </div>
+  </form>
+  {% if branding.updated_at %}<p class="help-text branding-updated">Last updated {{ branding.updated_at|date:"j F Y, H:i" }}{% if branding.updated_by %} by {{ branding.updated_by.get_full_name|default:branding.updated_by.username }}{% endif %}.</p>{% endif %}
+</section>
+{% endblock %}

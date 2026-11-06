@@ -1,0 +1,15 @@
+/.venv/
+/__pycache__/
+*.py[cod]
+*.sqlite3
+.env
+/private/uploads/*
+!/private/uploads/.gitkeep
+/public/static/
+.DS_Store
+*.log
+.coverage
+htmlcov/
+.pytest_cache/
+.idea/
+.vscode/

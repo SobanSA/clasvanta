@@ -1,0 +1,58 @@
+/* Clasvanta v2.5.2 — independent sidebar navigation scrolling.
+   Loaded after app.css so this stays a small, reversible CSS hotfix. */
+.sidebar {
+  height: 100vh;
+  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.sidebar > .brand,
+.sidebar > .nav-label,
+.sidebar > .side-bottom {
+  flex-shrink: 0;
+}
+/* Only the menu list scrolls. The logo and user identity remain in view. */
+.sidebar > .side-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #c5d1df transparent;
+}
+.sidebar > .side-nav::-webkit-scrollbar { width: 7px; }
+.sidebar > .side-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar > .side-nav::-webkit-scrollbar-thumb {
+  background: #c5d1df;
+  border-radius: 7px;
+}
+.sidebar > .side-nav::-webkit-scrollbar-thumb:hover { background: #91a6bf; }
+.sidebar > .side-bottom {
+  margin: 0 13px;
+  padding: 15px 9px calc(16px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+}
+/* Prevent a long username from increasing the sidebar width. */
+.sidebar .side-user { min-width: 0; overflow: hidden; }
+.sidebar .side-user strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sidebar .avatar { flex-shrink: 0; }
+/* Mobile sidebar occupies the visible viewport and keeps the same internal scroll. */
+@media (max-width: 860px) {
+  .sidebar {
+    top: 0;
+    bottom: auto;
+    height: 100vh;
+    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+}

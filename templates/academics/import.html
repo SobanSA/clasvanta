@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{% if is_students %}Import students{% else %}Academic setup import{% endif %} | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}{% if is_students %}Import students{% else %}Academic setup import{% endif %}{% endblock %}
+{% block content %}
+<div class="page-heading heading-row">
+  <div>
+    <span class="eyebrow">BULK IMPORT</span>
+    <h1>{% if is_students %}Import students{% else %}Set up the whole academic structure{% endif %}</h1>
+    <p>{% if is_students %}Students stay a separate import. Re-uploading updates an existing student's name or current class instead of duplicating the account.{% else %}One file creates or updates the term, programmes, semester classes, subjects, subject-based merged sections, teachers, assignments and weekly lecture numbers.{% endif %}</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'academic_structure' %}">Back to setup</a>
+</div>
+
+<div class="toolbar">
+  <a href="{% url 'bulk_import' 'structure' %}" class="tab {% if is_structure %}selected{% endif %}">Academic setup CSV</a>
+  <a href="{% url 'bulk_import' 'students' %}" class="tab {% if is_students %}selected{% endif %}">Students CSV</a>
+</div>
+
+<section class="panel import-panel">
+  <div class="import-instructions">
+    <h2>{% if is_students %}Student file columns{% else %}Academic setup file columns{% endif %}</h2>
+    {% if is_students %}
+      <div class="sample-columns">
+        <code>registration_number</code><code>student_name</code><code>class_code</code>
+      </div>
+      <p>Students inherit the subjects assigned to their class. New students receive a temporary password. Existing students are updated without changing their password.</p>
+      <a href="/static/sample_imports/students.csv?v=240" download>↓ Download example student CSV</a>
+    {% else %}
+      <div class="sample-columns wide-columns">
+        <code>term_name</code><code>term_start</code><code>term_end</code><code>program_code</code><code>program_name</code><code>class_code</code><code>class_name</code><code>semester</code><code>subject_code</code><code>subject_name</code><code>short_name</code><code>section_code</code><code>teacher_id</code><code>teacher_name</code><code>schedule</code>
+      </div>
+      <p><strong>One row = one subject in one semester class.</strong> If the same <code>subject_code</code> + <code>teacher_id</code> appears in several classes, those rows become <strong>one merged teaching section</strong>. The old <code>section_code</code> column is optional; the app generates a section label from subject + teacher.</p>
+      <p>Put all weekly lectures for that subject in one <code>schedule</code> cell, for example <code>Monday:1;Wednesday:3</code>. You may also use just <code>Monday</code> when Lecture 1 is sufficient. No lecture timings are required.</p>
+      <p>Re-uploading updates matching records instead of duplicating them. Schedule entries from rows that merge into the same section are combined.</p>
+      <a href="/static/sample_imports/academic_setup.csv?v=240" download>↓ Download example academic setup CSV</a>
+    {% endif %}
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="stack-form import-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="preview">
+    <label>Choose CSV (.csv) or Excel (.xlsx)</label>
+    <input type="file" name="file" accept=".csv,.xlsx" required>
+    <p class="help-text">Nothing is written until validation passes and you confirm the preview. Maximum 1,500 rows / 2 MB.</p>
+    <button class="btn btn-primary" type="submit">Validate & preview →</button>
+  </form>
+</section>
+
+{% if errors %}
+<div class="alert alert-error"><strong>Import needs attention:</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+{% endif %}
+
+{% if preview and not errors %}
+<section class="panel">
+  <div class="panel-head">
+    <h2>Preview <span class="count-badge">{{ preview|length }} rows</span></h2>
+    <span class="status-pill done">Validation passed</span>
+  </div>
+  <div class="table-scroller">
+    {% if is_students %}
+    <table class="data-table">
+      <thead><tr><th>Action</th><th>Registration ID</th><th>Name</th><th>Class</th></tr></thead>
+      <tbody>{% for row in preview|slice:':40' %}<tr><td><span class="action-chip">{{ row.action }}</span></td><td>{{ row.registration_number }}</td><td>{{ row.student_name }}</td><td>{{ row.class }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}
+    <table class="data-table import-preview-table">
+      <thead><tr><th>Programme</th><th>Source class</th><th>Subject / merged section</th><th>Teacher</th><th>Merged classes</th><th>Weekly lectures</th><th>What will happen</th></tr></thead>
+      <tbody>{% for row in preview|slice:':40' %}<tr>
+        <td><strong>{{ row.program_code }}</strong><small>{{ row.program_name }}</small></td>
+        <td><strong>{{ row.class_code }}</strong><small>{{ row.class_name }} · Semester {{ row.semester }}</small></td>
+        <td><strong>{{ row.subject_code }} — {{ row.short_name }}</strong><small>{{ row.subject_name }} · Section {{ row.section_code }}</small></td>
+        <td>{% if row.teacher_id %}<strong>{{ row.teacher_id }}</strong><small>{{ row.teacher_name }}</small>{% else %}<span class="muted">Unassigned</span>{% endif %}</td>
+        <td><strong>{{ row.merged_classes }}</strong>{% if row.merge_count > 1 %}<small class="merge-note">{{ row.merge_count }} classes → one section</small>{% endif %}</td>
+        <td>{{ row.schedule_text }}</td>
+        <td><div class="action-chip-wrap">{% for change in row.changes %}<span class="action-chip">{{ change }}</span>{% endfor %}</div></td>
+      </tr>{% endfor %}</tbody>
+    </table>
+    {% endif %}
+  </div>
+  <div class="panel-footer">
+    <p class="help-text">Showing up to 40 rows. All {{ preview|length }} validated rows will be processed as one transaction; if any write fails, nothing is partially imported.</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="confirm"><button class="btn btn-primary" type="submit">Confirm import of {{ preview|length }} rows</button></form>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

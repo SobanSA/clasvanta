@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Academic structure | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Academic structure{% endblock %}
+{% block content %}
+<div class="page-heading heading-row">
+  <div>
+    <span class="eyebrow">VERIFICATION VIEW</span>
+    <h1>Program → Class → assigned courses</h1>
+    <p>Use this screen to compare the attendance setup with the university portal and spot missing or unassigned courses quickly.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="{% url 'bulk_import' 'structure' %}">⇧ Update from CSV</a>
+    <a class="btn btn-secondary" href="{% url 'teacher_assignments' %}">Edit setup</a>
+  </div>
+</div>
+
+{% if not active_term %}
+<div class="alert alert-error">No active academic term. Import your Academic Setup CSV first.</div>
+{% else %}
+<div class="term-banner"><span class="status-pill done">Active term</span><strong>{{ active_term.name }}</strong><span>{{ active_term.start_date }} to {{ active_term.end_date }}</span></div>
+
+<section class="panel structure-filter-panel">
+  <form method="get" class="structure-filter">
+    <div>
+      <label for="program">Programme</label>
+      <select id="program" name="program" onchange="this.form.submit()">
+        {% for programme in programmes %}
+          <option value="{{ programme.pk }}" {% if selected_programme and programme.pk == selected_programme.pk %}selected{% endif %}>{{ programme.code }} — {{ programme.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="class">Class / semester</label>
+      <select id="class" name="class" onchange="this.form.submit()">
+        {% for group in classes %}
+          <option value="{{ group.pk }}" {% if selected_class and group.pk == selected_class.pk %}selected{% endif %}>{{ group.code }} — {{ group.name }}</option>
+        {% empty %}<option>No classes</option>{% endfor %}
+      </select>
+    </div>
+    <noscript><button class="btn btn-primary" type="submit">Show courses</button></noscript>
+  </form>
+</section>
+
+{% if selected_programme %}
+<div class="class-strip" aria-label="Classes in selected programme">
+  {% for group in classes %}
+  <a href="?program={{ selected_programme.pk }}&class={{ group.pk }}" class="class-chip {% if selected_class and group.pk == selected_class.pk %}selected{% endif %}">
+    <span>{{ group.name }}</span><strong>{{ group.code }}</strong><small>{{ group.assigned_course_count }} course{{ group.assigned_course_count|pluralize }}</small>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if selected_class %}
+<div class="structure-metrics">
+  <div class="metric-card compact"><span>Assigned courses</span><strong>{{ course_count }}</strong><small>{{ selected_class.code }}</small></div>
+  <div class="metric-card compact"><span>Missing teacher</span><strong class="{% if missing_teacher_count %}danger-text{% endif %}">{{ missing_teacher_count }}</strong><small>Needs attention</small></div>
+  <div class="metric-card compact"><span>Merged sections</span><strong>{{ merged_count }}</strong><small>Shared with other classes</small></div>
+</div>
+
+<section class="panel">
+  <div class="panel-head">
+    <div><h2>{{ selected_programme.code }} → {{ selected_class.name }}</h2><p class="help-text">Compare this list and course count with the official university portal.</p></div>
+    <span class="count-badge">{{ course_count }} courses</span>
+  </div>
+  <div class="table-scroller">
+    <table class="data-table structure-table">
+      <thead><tr><th>Course code</th><th>Course</th><th>Teacher</th><th>Teaching section</th><th>Classes in section</th><th>Weekly lectures</th><th>Check</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        {% with o=row.offering %}
+        <tr>
+          <td><strong>{{ o.subject.code }}</strong></td>
+          <td><strong>{{ o.subject.name }}</strong><small>{{ o.subject.short_name }}</small></td>
+          <td>{% if o.lecturer %}<strong>{{ o.lecturer.get_full_name|default:o.lecturer.username }}</strong><small>{{ o.lecturer.username }}</small>{% else %}<span class="status-pill absent-pill">Missing teacher</span>{% endif %}</td>
+          <td><span class="section-code">{{ o.section_code }}</span>{% if row.is_merged %}<small class="merge-note">Merged section</small>{% endif %}</td>
+          <td><div class="linked-class-list">{% for c in row.linked_classes %}<span class="class-tag {% if c.pk == selected_class.pk %}current{% endif %}">{{ c.code }}</span>{% endfor %}</div></td>
+          <td>{% for s in o.weekly_schedules.all %}<span class="schedule-pill">{{ s.get_weekday_display }} · L{{ s.lecture_number }}</span>{% empty %}<span class="muted">Not scheduled</span>{% endfor %}</td>
+          <td>{% if not o.lecturer %}<span class="warning-text">⚠ Teacher missing</span>{% elif row.is_merged %}<span class="ok-text">✓ Shared section</span>{% else %}<span class="ok-text">✓ Assigned</span>{% endif %}</td>
+        </tr>
+        {% endwith %}
+      {% empty %}<tr><td colspan="7" class="empty-cell">No courses assigned to this class. If the official portal has courses here, your CSV is missing them.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="verification-tip"><strong>Comparison tip</strong><span>If the university portal shows a different course count, compare course codes row-by-row here. A missing code means the Academic Setup CSV needs that class/course row.</span></div>
+{% endif %}
+{% endif %}
+{% endblock %}

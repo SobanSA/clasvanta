@@ -1,0 +1,5 @@
+term_name,term_start,term_end,program_code,program_name,class_code,class_name,semester,subject_code,subject_name,short_name,section_code,teacher_id,teacher_name,schedule
+Fall 2026,2026-09-01,2027-01-31,BSCS,BS Computer Science,BSCS-S1,Semester 1,1,CS101,Programming Fundamentals,PF,PF-S1,T001,Alex Morgan,Monday:1;Wednesday:2
+Fall 2026,2026-09-01,2027-01-31,BSCS,BS Computer Science,BSCS-S1,Semester 1,1,MTH101,Calculus,CAL,CAL-S1,T002,Sam Taylor,Tuesday:1;Thursday:2
+Fall 2026,2026-09-01,2027-01-31,BSCS,BS Computer Science,BSCS-S3,Semester 3,3,CS301,Database Systems,DB,DB-S3,T001,Alex Morgan,Monday:3;Thursday:3
+Fall 2026,2026-09-01,2027-01-31,BSCS,BS Computer Science,BSCS-S3,Semester 3,3,CS302,Data Structures,DS,DS-S3,T003,Jordan Lee,Tuesday:3;Friday:2

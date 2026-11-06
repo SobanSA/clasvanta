@@ -1,0 +1,166 @@
+/* v2.5.1 — Searchable, two-line course selector for lecture assignments. */
+.course-picker-field { min-width:0; }
+.course-picker-field .course-picker-help { color:#718198; font-size:11px; line-height:1.4; }
+.course-picker-field .course-picker-native[hidden],
+.course-picker-enhanced[hidden],
+.course-picker-popup[hidden],
+.course-picker-option[hidden],
+.course-picker-empty[hidden] { display:none !important; }
+.course-picker-enhanced { min-width:0; position:relative; width:100%; }
+.stack-form .course-picker-enhanced .course-picker-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  text-align:left; width:100%; min-height:62px; height:auto;
+  margin:0; padding:10px 14px; border:1px solid #dce4ed;
+  border-radius:10px; background:white; color:#17283f; cursor:pointer;
+  box-shadow:none; white-space:normal;
+}
+.stack-form .course-picker-enhanced .course-picker-trigger:focus-visible,
+.stack-form .course-picker-enhanced .course-picker-trigger[aria-expanded="true"] {
+  border-color:#6b97d5; box-shadow:0 0 0 3px rgba(25,91,181,.10); outline:none;
+}
+.course-picker-trigger-content { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.course-picker-trigger-content strong { font-size:13px; font-weight:750; line-height:1.35; overflow-wrap:anywhere; }
+.course-picker-trigger-content > span { display:block; font-size:11px; color:#718198; line-height:1.4; overflow-wrap:anywhere; }
+.course-picker-chevron { font-size:16px; color:#627996; flex-shrink:0; }
+.course-picker-trigger.is-invalid { border-color:#d54c5a !important; }
+.course-slot-panel.course-slot-panel--open { position:relative; overflow:visible; z-index:25; }
+.course-picker-popup {
+  position:absolute; z-index:40; top:calc(100% + 7px); left:0;
+  width:min(610px, calc(100vw - 50px));
+  background:#fff; border:1px solid #ccdaed; border-radius:14px;
+  box-shadow:0 18px 42px rgba(30,49,80,.17); overflow:hidden;
+}
+.course-picker-search-wrap { padding:14px 14px 10px; border-bottom:1px solid #ebf0f6; }
+.course-picker-search-label { display:block; margin-bottom:6px; font-size:11px !important; }
+.stack-form .course-picker-enhanced input[data-picker-search] { width:100%; height:44px; min-height:44px; margin:0; padding:11px 13px; border:1px solid #d9e2ed; border-radius:9px; font-size:13px; }
+.course-picker-count { display:block; font-size:11px; color:#6d8099; margin-top:7px; }
+.course-picker-results { max-height:340px; overflow-y:auto; overscroll-behavior:contain; padding:6px; }
+.stack-form .course-picker-enhanced .course-picker-option {
+  width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:5px;
+  padding:14px 15px; margin:0; border:1px solid transparent;
+  border-radius:10px; background:#fff; text-align:left; color:#17283f;
+  cursor:pointer; white-space:normal; height:auto;
+}
+.course-picker-option + .course-picker-option { margin-top:3px !important; }
+.stack-form .course-picker-enhanced .course-picker-option:hover,
+.stack-form .course-picker-enhanced .course-picker-option.is-highlighted { background:#edf4fe; border-color:#d9e7fb; }
+.stack-form .course-picker-enhanced .course-picker-option[aria-selected="true"] { background:#f0f8f5; border-color:#cbeade; }
+.course-picker-title { font-size:15px; font-weight:750; color:#192b44; line-height:1.45; overflow-wrap:anywhere; }
+.course-picker-details { font-size:12px; line-height:1.6; color:#61728a; overflow-wrap:anywhere; }
+.course-picker-merged { display:inline-flex; font-size:10px; font-weight:700; color:#35649f; background:#eaf2fd; padding:3px 8px; border-radius:99px; }
+.course-picker-empty { margin:0; padding:18px 16px; font-size:12px; color:#748299; }
+@media(max-width:600px) {
+  .course-picker-popup { width:100%; min-width:0; }
+  .course-picker-results { max-height:min(46vh, 300px); }
+}
+
+
+/* v2.5.3 — Align the course picker with Day and Lecture Number. */
+.stack-form .lecture-slot-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:start; /* Override app.css .form-grid-3 { align-items:end } */
+  gap:20px;
+}
+.stack-form .lecture-slot-grid > .lecture-slot-field {
+  display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start;
+  min-width:0; gap:8px;
+}
+.stack-form .lecture-slot-grid > .lecture-slot-field > label {
+  margin:0; line-height:16px; min-height:16px;
+}
+.stack-form .lecture-slot-grid .course-picker-trigger,
+.stack-form .lecture-slot-grid > .lecture-slot-field > select,
+.stack-form .lecture-slot-grid > .lecture-slot-field > input[type=number],
+.stack-form .lecture-slot-grid .course-picker-native {
+  min-height:62px; height:62px; width:100%; margin:0;
+}
+.stack-form .lecture-slot-grid .course-picker-trigger { height:auto; min-height:62px; }
+.stack-form .lecture-slot-grid .course-picker-help { display:block; margin:2px 0 0; }
+
+/* Searchable, readable verification and weekly lecture lists. */
+.lecture-list-head { padding-bottom:18px; }
+.lecture-list-tools { padding:17px 25px 19px; border-bottom:1px solid #e9eef5; }
+.lecture-list-tools[hidden], .course-list-card[hidden], .course-list-card-empty[hidden] { display:none!important; }
+.lecture-list-tools label { display:block; font-size:11px; font-weight:800; color:#60728a; margin:0 0 8px; }
+.lecture-list-search-line { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.lecture-list-search-line input[type=search] {
+  box-sizing:border-box; width:min(100%,520px); flex:1 1 260px;
+  height:46px; padding:10px 15px; border:1px solid #d9e3ef;
+  border-radius:10px; outline:none; background:#fff; color:#172a45; font-size:13px;
+}
+.lecture-list-search-line input[type=search]:focus { border-color:#6b97d5; box-shadow:0 0 0 3px rgba(25,91,181,.1); }
+.lecture-list-count { color:#7b8ba1; font-size:11px; white-space:nowrap; }
+.course-list-card-list { display:flex; flex-direction:column; padding:12px 20px 18px; gap:10px; }
+.course-list-card { border:1px solid #dfe7f1; border-radius:13px; background:#fff; padding:19px 20px;
+  display:grid; grid-template-columns:minmax(0,1.4fr) minmax(240px,.8fr); gap:20px;
+  align-items:start; box-shadow:0 2px 8px rgba(22,47,83,.025);
+}
+.course-list-card-main, .course-list-card-aside { min-width:0; }
+.course-list-card-title-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.course-list-card-title { color:#17283f; font-size:16px; line-height:1.35; font-weight:750; margin:0 0 9px; overflow-wrap:anywhere; }
+.course-list-card-title-row .course-list-card-title { margin-bottom:0; }
+.course-list-card-title-row { margin-bottom:9px; }
+.course-list-card-meta { margin:4px 0; font-size:12px; color:#60728b; line-height:1.65; overflow-wrap:anywhere; }
+.course-list-card-meta strong { color:#41536b; font-weight:750; }
+.course-list-card-meta [aria-hidden="true"] { margin:0 5px; color:#a5b0bf; }
+.course-list-card .course-picker-merged { margin-top:8px; }
+.course-list-card-label { display:block; text-transform:uppercase; letter-spacing:.04em; font-size:10px; font-weight:800; color:#76869b; margin-bottom:8px; }
+.lecture-pill-group { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.lecture-pill-group .schedule-pill { margin:0; font-size:11px; }
+.course-list-card-warning { color:#b45151; font-size:11px; margin:9px 0 0; line-height:1.45; }
+.course-list-card-empty { padding:28px 20px; color:#75849b; text-align:center; font-size:13px; }
+.course-list-card-edit-form { display:flex; flex-direction:column; align-items:flex-start; gap:9px; margin:0; }
+.lecture-edit-row { display:grid; grid-template-columns:minmax(140px,1.4fr) minmax(95px,.6fr); gap:9px; width:100%; }
+.lecture-edit-field { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.lecture-edit-field label { color:#6b7c93; font-size:10px; font-weight:750; text-transform:uppercase; }
+.lecture-edit-field select, .lecture-edit-field input { width:100%; height:42px; padding:7px 10px; border-radius:9px; border:1px solid #dce5f0; background:white; color:#17283f; }
+.course-list-card-edit-form .btn { min-height:34px; padding:7px 12px; }
+.course-list-card-delete-form { margin:7px 0 0; }
+.course-list-card-delete-form .btn { min-height:34px; padding:7px 12px; }
+@media(max-width:1000px) {
+ .course-list-card { grid-template-columns:minmax(0,1fr); gap:13px; }
+ .course-list-card-aside { border-top:1px solid #f0f3f8; padding-top:13px; }
+}
+@media(max-width:760px) {
+ .stack-form .lecture-slot-grid { grid-template-columns:1fr; gap:16px; }
+ .course-list-card-list { padding:11px 12px 16px; }
+ .course-list-card { padding:16px 14px; }
+ .lecture-list-tools { padding:15px 17px; }
+ .lecture-list-search-line { gap:9px; }
+}
+@media(max-width:420px) {
+ .lecture-edit-row { grid-template-columns:minmax(0,1fr) minmax(90px,.65fr); }
+ .course-list-card-title { font-size:15px; }
+}
+
+
+/* v2.5.4 — Compact weekly lecture cards; buttons sit together without nested forms. */
+.course-list-card--editable {
+  padding:13px 17px; gap:16px;
+  grid-template-columns:minmax(0,1.5fr) minmax(285px,.8fr);
+}
+.course-list-card--editable .course-list-card-title { margin-bottom:6px; }
+.course-list-card--editable .course-list-card-meta { margin:2px 0; }
+.course-list-card--editable .course-list-card-aside {
+  display:flex; flex-direction:column; align-items:stretch; gap:9px;
+}
+.course-list-card--editable .course-list-card-edit-form { margin:0; display:block; }
+.course-list-card--editable .lecture-edit-row { gap:8px; }
+.course-list-card--editable .lecture-edit-field select,
+.course-list-card--editable .lecture-edit-field input { height:38px; }
+.course-list-card--editable .lecture-edit-actions {
+  display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+}
+.course-list-card--editable .lecture-edit-actions .btn {
+  min-height:34px; padding:7px 14px; margin:0;
+}
+.course-list-card--editable .course-list-card-delete-form { margin:0; }
+@media(max-width:1000px) {
+  .course-list-card--editable { grid-template-columns:minmax(0,1.35fr) minmax(260px,.9fr); gap:12px; }
+  .course-list-card--editable .course-list-card-aside { border-top:0; padding-top:0; }
+}
+@media(max-width:760px) {
+  .course-list-card--editable { grid-template-columns:minmax(0,1fr); padding:13px 14px; gap:9px; }
+  .course-list-card--editable .course-list-card-aside { border-top:1px solid #f0f3f8; padding-top:10px; }
+}

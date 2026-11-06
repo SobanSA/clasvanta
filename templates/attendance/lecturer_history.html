@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}My class history | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}My class history{% endblock %}
+{% block content %}
+<div class="page-heading heading-row"><div><span class="eyebrow">LECTURER PORTAL</span><h1>My class history</h1><p>Held and cancelled classes are recorded here. Pending/unmarked timetable rows are not counted as held.</p></div><a href="{% url 'lecturer_dashboard' %}" class="btn btn-soft">Today's lectures →</a></div>
+<section class="panel"><div class="table-scroller"><table class="data-table"><thead><tr><th>Date</th><th>Lecture</th><th>Subject</th><th>Linked classes</th><th>Status</th><th>Recorded by</th><th>Action</th></tr></thead><tbody>{% for session in sessions %}<tr><td><strong>{{ session.lecture_date }}</strong></td><td>L{{ session.lecture_number }}</td><td><strong>{{ session.class_subject.subject.name }}</strong><small>{{ session.class_subject.subject.code }}</small></td><td>{{ session.class_subject.class_codes_display }}</td><td>{% if session.status == 'SUBMITTED' %}<span class="status-pill done">Held</span>{% else %}<span class="status-pill status-cancelled">Cancelled</span>{% endif %}</td><td>{{ session.submitted_by.username }}</td><td><a href="{% url 'session_detail' session.pk %}">{% if session.status == 'SUBMITTED' and session.lecture_date == today %}View / Edit{% else %}View{% endif %} →</a></td></tr>{% empty %}<tr><td colspan="7" class="empty-cell">No held or cancelled classes recorded yet.</td></tr>{% endfor %}</tbody></table></div></section>
+<a href="{% url 'audit_log' %}">View student-level attendance audit events →</a>
+{% endblock %}

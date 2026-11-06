@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Add student | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Students / Add{% endblock %}
+{% block content %}
+<div class="page-heading heading-row"><div><span class="eyebrow">MANUAL ENROLMENT</span><h1>Add student</h1><p>Use this for a one-off admission. For batches, use the student CSV import.</p></div><a class="btn btn-secondary" href="{% url 'students_list' %}">View enrolled students</a></div>
+{% if new_student %}<div class="alert alert-success"><strong>Student created — copy credentials now.</strong><br>{{ new_student.registration_number }} · {{ new_student.student_name }} · {{ new_student.class_code }}<br>Temporary password: <code>{{ new_student.password }}</code></div>{% endif %}
+<section class="panel form-panel"><form method="post" class="stack-form narrow-form">{% csrf_token %}<label>Registration number</label><input name="registration_number" placeholder="BC250001" required><label>Student name</label><input name="student_name" placeholder="Student full name" required><label>Class</label><select name="class_group" required><option value="">Select class</option>{% for g in groups %}<option value="{{ g.pk }}">{{ g.programme.code }} · {{ g.code }} · {{ g.name }}</option>{% endfor %}</select><p class="help-text">A secure temporary password will be generated automatically. The student must change it after first login.</p><button class="btn btn-primary" type="submit" {% if not active_term %}disabled{% endif %}>Create student</button></form></section>
+{% endblock %}

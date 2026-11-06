@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block title %}Sign in | {{ app_branding.app_name }}{% endblock %}
+{% block guest_content %}<div class="login-wrap"><div class="login-panel">
+<a class="brand login-brand" href="/"><span class="brand-mark">{{ app_branding.app_name|slice:":1"|upper }}</span><span><strong>{{ app_branding.app_name }}</strong><small>{{ app_branding.subtitle }}</small></span></a>
+<div class="login-hero"><span class="eyebrow">WELCOME BACK</span><h1>Sign in to your account</h1><p>Your classes, attendance and semester records in one place.</p></div>
+{% if form.errors %}<div class="alert alert-error">Username or password is incorrect. Please try again.</div>{% endif %}
+<form method="post" class="stack-form">{% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
+<label for="id_username">Username / Student Registration No.</label><input id="id_username" name="username" required autofocus autocomplete="username" placeholder="Enter your username or registration ID">
+<label for="id_password">Password</label><input id="id_password" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password">
+<button class="btn btn-primary btn-full" type="submit">Sign in <span>→</span></button>
+</form><p class="login-foot">Need access? Contact your institution administrator.</p></div><div class="login-art"><div class="login-art-inner"><div class="login-art-symbol">✓</div><h2>Simple attendance.<br>Clear insights.</h2><p>Designed for students, lecturers and academic administrators.</p><div class="mini-stats"><span>Students</span><span>Lectures</span><span>Attendance</span></div></div></div></div>{% endblock %}

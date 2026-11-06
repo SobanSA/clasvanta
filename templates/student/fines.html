@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}My Fines | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}My Fines{% endblock %}
+{% block content %}
+<div class="page-heading student-page-heading">
+  <span class="eyebrow">STUDENT PORTAL</span>
+  <h1>My Fines</h1>
+  <p>Balances come directly from the existing attendance fine ledger.</p>
+</div>
+
+{% if not membership %}
+<div class="panel empty-state student-empty-state"><strong>No active class enrollment</strong><p>Fine information will appear after you are enrolled in an active term.</p></div>
+{% else %}
+<div class="student-fine-hero">
+  <div><span>Total outstanding</span><strong>Rs {{ fine_total|floatformat:0 }}</strong><small>Net amount currently due</small></div>
+  {% if policy %}<div class="student-fine-policy"><span>Current policy</span><strong>{{ policy.allowed_absences }} allowed absence{{ policy.allowed_absences|pluralize }} per subject</strong><small>Rs {{ policy.rate_per_extra_absence|floatformat:0 }} per additional absence</small></div>{% endif %}
+</div>
+
+<div class="student-info-note">Only absences from <strong>Held</strong> classes can affect fines. Pending and Cancelled classes never create a fine.</div>
+
+<div class="section-heading"><div><h2>Subject-wise fine position</h2><p>Open a subject to see absences and ledger activity.</p></div></div>
+<div class="student-fine-list">
+  {% for row in rows %}
+  <details class="portal-fine-card {% if row.fine_balance > 0 %}has-fine{% endif %}">
+    <summary>
+      <div><small>{{ row.offering.subject.code }}</small><strong>{{ row.offering.subject.name }}</strong><span>{{ row.absent }} absence{{ row.absent|pluralize }} · {{ row.excess_absences }} chargeable</span></div>
+      <div class="portal-fine-amount"><small>Due</small><strong>Rs {{ row.fine_balance|floatformat:0 }}</strong></div>
+    </summary>
+    <div class="portal-fine-body">
+      <div class="student-fine-calculation">
+        <div><span>Total absences</span><strong>{{ row.absent }}</strong></div>
+        <div><span>Allowed</span><strong>{{ policy.allowed_absences }}</strong></div>
+        <div><span>Chargeable</span><strong>{{ row.excess_absences }}</strong></div>
+        <div><span>Rate</span><strong>Rs {{ row.rate|floatformat:0 }}</strong></div>
+        <div><span>Automatic gross</span><strong>Rs {{ row.gross_target|floatformat:0 }}</strong></div>
+        <div><span>Net due</span><strong>Rs {{ row.fine_balance|floatformat:0 }}</strong></div>
+      </div>
+
+      <div class="student-ledger-summary">
+        <span>Charges: <strong>Rs {{ row.charge_total|floatformat:0 }}</strong></span>
+        <span>Adjustments: <strong>Rs {{ row.adjustment_total|floatformat:0 }}</strong></span>
+        <span>Payments: <strong>Rs {{ row.payment_total|floatformat:0 }}</strong></span>
+        {% if row.credit %}<span>Credit: <strong>Rs {{ row.credit|floatformat:0 }}</strong></span>{% endif %}
+      </div>
+
+      <div class="student-history-heading"><strong>Absences in Held classes</strong><span>{{ row.absence_history|length }}</span></div>
+      <div class="student-history-list">
+        {% for item in row.absence_history %}
+        <div class="student-history-row">
+          <div><strong>{{ item.date|date:'D, j M Y' }}</strong><small>Lecture {{ item.lecture_number }} · {{ item.source }} · Absence #{{ item.absence_number }}</small></div>
+          {% if item.chargeable %}<span class="student-badge chargeable">Chargeable</span>{% else %}<span class="student-badge allowance">Within allowance</span>{% endif %}
+        </div>
+        {% empty %}<div class="student-history-empty">No absences recorded for this subject.</div>{% endfor %}
+      </div>
+
+      {% if row.entries %}
+      <div class="student-history-heading ledger-heading"><strong>Fine ledger</strong><span>{{ row.entries|length }} entr{{ row.entries|length|pluralize:'y,ies' }}</span></div>
+      <div class="student-ledger-list">
+        {% for entry in row.entries %}
+        <div class="student-ledger-row"><div><strong>{{ entry.get_kind_display }}</strong><small>{{ entry.created_at|date:'j M Y, g:i A' }}{% if entry.note %} · {{ entry.note }}{% endif %}</small></div><strong class="ledger-amount">Rs {{ entry.amount|floatformat:0 }}</strong></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </details>
+  {% empty %}<div class="panel empty-state">No subjects have been assigned to your class yet.</div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

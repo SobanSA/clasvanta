@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Student dashboard | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Student dashboard{% endblock %}
+{% block content %}
+<div class="page-heading student-page-heading">
+  <span class="eyebrow">STUDENT PORTAL</span>
+  <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+  <p>{{ today|date:'l, j F Y' }}{% if membership %} · {{ membership.class_group.code }} · {{ membership.term.name }}{% endif %}</p>
+</div>
+
+{% if not membership %}
+<div class="panel empty-state student-empty-state">
+  <strong>No active class enrollment</strong>
+  <p>You are not enrolled in an active academic term. Contact the academic administrator if this is unexpected.</p>
+</div>
+{% else %}
+<div class="metric-grid student-portal-metrics">
+  <article class="metric-card">
+    <span>Today's classes</span>
+    <strong>{{ today_rows|length }}</strong>
+    <small>Regular + approved make-up</small>
+  </article>
+  <article class="metric-card">
+    <span>Overall attendance</span>
+    <strong>{% if overall_percentage != None %}{{ overall_percentage }}%{% else %}—{% endif %}</strong>
+    <small>{{ attendance_summary.present }} attended / {{ attendance_summary.total }} held</small>
+  </article>
+  <article class="metric-card">
+    <span>Fine due</span>
+    <strong>Rs {{ fine_total|floatformat:0 }}</strong>
+    <small>Current ledger balance due</small>
+  </article>
+  <article class="metric-card">
+    <span>Make-up classes today</span>
+    <strong>{{ makeup_today }}</strong>
+    <small>Approved only</small>
+  </article>
+</div>
+
+{% if warning_subjects %}
+<div class="student-warning-banner" role="status">
+  <div>
+    <strong>Attendance attention needed</strong>
+    <p>{{ warning_subjects|length }} subject{{ warning_subjects|length|pluralize }} near or beyond the allowed absence limit.</p>
+  </div>
+  <a class="btn btn-outline" href="{% url 'student_my_attendance' %}">Review attendance</a>
+</div>
+{% endif %}
+
+<div class="student-quick-links" aria-label="Student portal shortcuts">
+  <a href="{% url 'student_my_attendance' %}" class="student-quick-link"><span>✓</span><div><strong>My Attendance</strong><small>Subject totals and held-class history</small></div></a>
+  <a href="{% url 'student_schedule' %}" class="student-quick-link"><span>▤</span><div><strong>My Schedule</strong><small>Regular and approved make-up lectures</small></div></a>
+  <a href="{% url 'student_fines' %}" class="student-quick-link"><span>¤</span><div><strong>My Fines</strong><small>Subject-wise balance and calculation</small></div></a>
+  <a href="{% url 'student_profile' %}" class="student-quick-link"><span>○</span><div><strong>My Profile</strong><small>Enrollment and account details</small></div></a>
+</div>
+
+<div class="section-heading">
+  <div><h2>Today's classes</h2><p>Only lecture numbers are used; no start/end times.</p></div>
+  <a href="{% url 'student_schedule' %}" class="back-link">Open schedule →</a>
+</div>
+<div class="student-schedule-list">
+  {% for item in today_rows %}
+  <article class="student-schedule-card">
+    <span class="student-lecture-number">{{ item.lecture_number }}</span>
+    <div class="student-schedule-main">
+      <div class="student-card-title-row">
+        <div><strong>{{ item.offering.subject.name }}</strong><small>{{ item.offering.subject.code }} · Lecture {{ item.lecture_number }}</small></div>
+        {% if item.source == 'MAKEUP' %}<span class="student-badge makeup">Make-up</span>{% endif %}
+      </div>
+      <div class="student-status-row">
+        <span class="status-pill {% if item.state == 'HELD' %}done{% elif item.state == 'CANCELLED' %}status-cancelled{% elif item.state == 'PENDING' %}pending{% else %}student-scheduled{% endif %}">{{ item.state_label }}</span>
+        {% if item.mark == 'P' %}<span class="student-mark present">Present</span>{% elif item.mark == 'A' %}<span class="student-mark absent">Absent</span>{% endif %}
+      </div>
+    </div>
+  </article>
+  {% empty %}
+  <div class="panel empty-state">No classes are scheduled for today.</div>
+  {% endfor %}
+</div>
+
+<div class="section-heading">
+  <div><h2>Subject attendance</h2><p>Pending and cancelled classes are excluded from Held totals.</p></div>
+  <a href="{% url 'student_my_attendance' %}" class="back-link">View full history →</a>
+</div>
+<div class="student-subject-grid portal-subject-grid">
+  {% for row in subjects %}
+  <article class="subject-stat portal-subject-summary {% if row.warning_level == 'danger' %}subject-danger{% elif row.warning_level == 'warning' %}subject-warning{% endif %}">
+    <div class="subject-stat-head">
+      <div><small>{{ row.offering.subject.code }}</small><h3>{{ row.offering.subject.name }}</h3></div>
+      <span class="student-percent {% if row.warning_level == 'danger' %}danger{% elif row.warning_level == 'warning' %}warning{% endif %}">{% if row.percentage != None %}{{ row.percentage }}%{% else %}—{% endif %}</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width: {{ row.percentage|default:0 }}%"></div></div>
+    <div class="subject-stat-footer"><span><b>{{ row.present }}</b> attended</span><span><b>{{ row.total }}</b> held</span><span><b>{{ row.allowed_remaining }}</b> allowed left</span></div>
+    {% if row.warning_level != 'ok' %}<p class="student-inline-warning">{{ row.warning_text }}</p>{% endif %}
+  </article>
+  {% empty %}
+  <div class="panel empty-state">No subjects have been assigned to your class yet.</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

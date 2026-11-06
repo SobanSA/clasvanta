@@ -1,0 +1,331 @@
+/* v2.5.5 — admin usability additions: searchable student lists, searchable subject picker,
+   date-based attendance schedule, and student attendance lookup. */
+
+/* Enrolled students */
+.student-roster-filters{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:18px;align-items:end;padding:18px 22px}
+.student-roster-filters .structure-filter{padding:0;margin:0}
+.student-filter-grid{grid-template-columns:minmax(190px,1fr) minmax(190px,1fr)}
+.student-live-search{display:flex;flex-direction:column;gap:6px;min-width:0}
+.student-live-search label{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.student-live-search input{height:42px;width:100%;border:1px solid var(--line);border-radius:9px;padding:0 12px;background:#fff;color:var(--ink);outline:none}
+.student-live-search input:focus{border-color:#6b97d5;box-shadow:0 0 0 3px rgba(25,91,181,.09)}
+.student-live-search small{font-size:10px;color:#8795a8}
+[data-roster-empty][hidden]{display:none!important}
+
+/* Teacher assignment: keep all three columns aligned while replacing only Subject. */
+.teacher-assignment-form{overflow:visible}
+.teacher-assignment-grid{align-items:start!important;gap:16px}
+.teacher-assignment-grid>.assignment-field{display:flex;flex-direction:column;gap:7px;min-width:0;position:relative}
+.teacher-assignment-grid>.assignment-field>label{min-height:16px;line-height:16px;margin:0}
+.teacher-assignment-grid>.assignment-field>select,
+.subject-search-trigger{height:52px!important;min-height:52px!important;width:100%;box-sizing:border-box;margin:0!important}
+.subject-search-native{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.subject-search-widget{position:relative;min-width:0;width:100%}
+.subject-search-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px;border:1px solid #dce4ed;border-radius:9px;background:#fff;color:#17283f;text-align:left;cursor:pointer;font:inherit}
+.subject-search-trigger:focus-visible,.subject-search-trigger[aria-expanded="true"]{outline:none;border-color:#6b97d5;box-shadow:0 0 0 3px rgba(25,91,181,.09)}
+.subject-search-trigger.is-invalid{border-color:#d54c5a;box-shadow:0 0 0 3px rgba(213,76,90,.09)}
+.subject-search-trigger strong{display:block;font-size:13px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subject-search-trigger span{display:block;font-size:10px;color:#7a899d;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subject-search-chevron{font-size:14px;color:#70839c;flex:0 0 auto}
+.subject-search-popup{position:absolute;z-index:80;top:calc(100% + 7px);left:0;width:min(520px,calc(100vw - 48px));border:1px solid #d3deec;border-radius:12px;background:#fff;box-shadow:0 18px 42px rgba(30,49,80,.17);overflow:hidden}
+.subject-search-popup[hidden],.subject-search-option[hidden],.subject-search-empty[hidden]{display:none!important}
+.subject-search-box{padding:12px;border-bottom:1px solid #ebf0f6}
+.subject-search-box input{width:100%;height:42px;border:1px solid #d9e2ed;border-radius:9px;padding:0 12px;outline:none}
+.subject-search-box input:focus{border-color:#6b97d5;box-shadow:0 0 0 3px rgba(25,91,181,.08)}
+.subject-search-results{max-height:330px;overflow-y:auto;padding:6px;overscroll-behavior:contain}
+.subject-search-option{display:block;width:100%;border:1px solid transparent;border-radius:9px;background:#fff;text-align:left;padding:12px 13px;cursor:pointer}
+.subject-search-option:hover,.subject-search-option.is-highlighted{background:#edf4fe;border-color:#d9e7fb}
+.subject-search-option strong{display:block;font-size:14px;color:#17283f;line-height:1.35}
+.subject-search-option span{display:block;font-size:11px;color:#6d7d92;margin-top:4px}
+.subject-search-empty{padding:16px;color:#78879b;font-size:12px}
+
+/* Admin attendance day schedule */
+.attendance-date-panel{margin-bottom:16px}
+.attendance-date-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:18px 22px}
+.attendance-date-form>div{display:flex;flex-direction:column;gap:6px}
+.attendance-date-form label{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.attendance-date-form input[type=date]{height:42px;min-width:200px;border:1px solid var(--line);border-radius:9px;padding:0 11px;background:#fff;color:var(--ink)}
+.attendance-day-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.attendance-schedule-table{min-width:980px}
+.attendance-schedule-table td{vertical-align:middle}
+.status-pending{background:#fff4dc!important;color:#9b6a12!important;border-color:#f4dfad!important}
+.status-absent{background:#fff0f1!important;color:#bd4350!important;border-color:#f1c6cb!important}
+
+/* Student attendance lookup */
+.student-attendance-search-panel{overflow:visible;margin-bottom:16px}
+.student-lookup{padding:18px 22px;position:relative}
+.student-lookup>input{width:100%;height:48px;border:1px solid #d6e0ec;border-radius:10px;padding:0 14px;font-size:13px;outline:none}
+.student-lookup>input:focus{border-color:#6b97d5;box-shadow:0 0 0 3px rgba(25,91,181,.09)}
+.student-lookup-results{margin-top:9px;border:1px solid #e0e7f0;border-radius:11px;max-height:320px;overflow-y:auto;padding:6px;background:#fff}
+.student-lookup-results[hidden]{display:none!important}
+.student-lookup.is-open .student-lookup-results{box-shadow:0 12px 30px rgba(30,49,80,.10)}
+.student-lookup-option{display:flex;flex-direction:column;gap:3px;padding:11px 12px;border-radius:8px;text-decoration:none;color:var(--ink);border:1px solid transparent}
+.student-lookup-option:hover{background:#edf4fe;border-color:#d9e7fb}
+.student-lookup-option strong{font-size:13px}
+.student-lookup-option span{font-size:11px;color:#708197}
+.student-lookup-empty{padding:15px 12px;margin:0;color:#78879b;font-size:12px}
+.student-lookup-option[hidden],.student-lookup-empty[hidden]{display:none!important}
+.student-attendance-profile{margin-bottom:16px}
+.student-attendance-profile .panel-head h2{margin-top:3px}
+.student-attendance-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;padding:0 22px 20px}
+.student-attendance-metrics .metric-card.compact{min-height:90px}
+.student-attendance-metrics .metric-card.compact>strong{font-size:24px}
+.student-attendance-table{min-width:1050px}
+
+@media(max-width:1000px){
+ .student-roster-filters{grid-template-columns:1fr}
+ .student-attendance-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .student-filter-grid{grid-template-columns:1fr}
+ .teacher-assignment-grid{grid-template-columns:1fr!important}
+ .subject-search-popup{width:100%}
+ .attendance-date-form{padding:15px 16px}
+ .attendance-day-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .student-attendance-metrics{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 15px 15px}
+ .student-lookup{padding:15px}
+}
+@media(max-width:480px){
+ .attendance-date-form>div,.attendance-date-form input[type=date]{width:100%}
+ .attendance-date-form .btn{flex:1 1 auto}
+ .student-attendance-metrics{grid-template-columns:1fr 1fr}
+}
+
+/* v2.6 — held/cancelled workflow, student drill-down, make-up approval */
+.attendance-day-summary-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.status-cancelled{background:#fff0f1!important;color:#b93c4b!important;border-color:#efc4ca!important}
+.makeup-pill{background:#eef2ff!important;color:#4e5fb7!important;border-color:#d9def8!important}
+.btn-danger-soft{background:#fff4f5;color:#b43d4b;border:1px solid #efc8cd}
+.btn-danger-soft:hover{background:#ffe9ec;border-color:#e8aeb6}
+.row-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.inline-action-form,.row-actions form,.lecture-action-row form{margin:0}
+.lecture-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.lecture-action-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%}
+.lecture-action-row .btn{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+
+.makeup-create-panel{overflow:visible;margin-bottom:16px}
+.makeup-form{padding:20px 22px}
+.makeup-form-grid{display:grid;grid-template-columns:minmax(300px,1.65fr) minmax(180px,.65fr) minmax(150px,.5fr);gap:16px;align-items:start}
+.makeup-form-grid .assignment-field{display:flex;flex-direction:column;gap:7px;min-width:0;position:relative}
+.makeup-form-grid .assignment-field>label{min-height:16px;line-height:16px;margin:0}
+.makeup-form-grid .assignment-field>input,.makeup-form-grid .assignment-field>select,.makeup-form-grid .subject-search-trigger{height:52px!important;min-height:52px!important;box-sizing:border-box;margin:0!important}
+.makeup-table{min-width:1100px}
+
+.student-subject-attendance-list{display:flex;flex-direction:column;gap:10px}
+.student-subject-attendance-card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(29,44,66,.03)}
+.student-subject-attendance-card>summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) 170px 100px;gap:18px;align-items:center;padding:16px 18px;cursor:pointer}
+.student-subject-attendance-card>summary::-webkit-details-marker{display:none}
+.student-subject-attendance-card>summary:hover{background:#f8fbff}
+.subject-attendance-main{min-width:0}
+.subject-attendance-main>strong{display:block;font-size:15px;color:var(--ink);line-height:1.35}
+.subject-attendance-main>span{display:block;margin-top:4px;font-size:11px;color:#728198;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.subject-attendance-count{text-align:right}
+.subject-attendance-count>strong{display:block;font-size:20px;color:#1e3552}
+.subject-attendance-count>span{display:block;font-size:10px;color:#7f8da0;text-transform:uppercase;letter-spacing:.03em;margin-top:2px}
+.subject-attendance-percent{font-size:15px;font-weight:800;text-align:right;color:#315d99;display:flex;gap:10px;align-items:center;justify-content:flex-end}
+.expand-chevron{display:inline-block;transition:transform .16s ease;color:#75869c}
+.student-subject-attendance-card[open] .expand-chevron{transform:rotate(180deg)}
+.subject-attendance-detail{border-top:1px solid #e7edf4;background:#fbfcfe;padding:14px 18px 18px}
+.subject-detail-metrics{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.subject-detail-metrics>span{background:#fff;border:1px solid #e1e8f0;border-radius:8px;padding:7px 10px;font-size:11px;color:#6d7d91}
+.subject-detail-metrics b{color:#203752;margin-right:3px}
+.compact-history-table{min-width:650px}
+.compact-history-table td,.compact-history-table th{padding-top:9px;padding-bottom:9px}
+
+@media(max-width:900px){
+ .attendance-day-summary-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .makeup-form-grid{grid-template-columns:1fr 1fr}
+ .makeup-form-grid>.assignment-field:first-child{grid-column:1 / -1}
+ .student-subject-attendance-card>summary{grid-template-columns:minmax(0,1fr) 145px 85px}
+}
+@media(max-width:650px){
+ .lecture-action-row{grid-template-columns:1fr}
+ .makeup-form-grid{grid-template-columns:1fr}
+ .makeup-form-grid>.assignment-field:first-child{grid-column:auto}
+ .student-subject-attendance-card>summary{grid-template-columns:minmax(0,1fr) auto;padding:14px}
+ .subject-attendance-count{text-align:left;grid-column:1 / 2}
+ .subject-attendance-percent{grid-column:2;grid-row:1 / span 2}
+ .subject-attendance-detail{padding:12px 14px 14px}
+}
+
+
+
+
+/* v2.6.1 — layout hotfix: flow-based searchable subject picker, aligned roster filters,
+   responsive teacher-assignment cards, and dashboard summary metrics. */
+
+/* Root-cause fix for the Teacher Assignment subject list:
+   .panel intentionally clips overflow. Keep the picker inside normal document flow so
+   opening it expands the form card rather than trying to escape the clipped panel. */
+.teacher-assignment-grid{align-items:start!important;gap:20px}
+.teacher-assignment-grid>.assignment-field{display:flex;flex-direction:column;gap:7px;min-width:0;position:relative}
+.teacher-assignment-grid>.assignment-field>label{min-height:16px;line-height:16px;margin:0}
+.teacher-assignment-grid>.assignment-field>select,
+.teacher-assignment-grid .subject-search-trigger,.teacher-assignment-grid .teacher-search-trigger{height:52px!important;min-height:52px!important;width:100%;box-sizing:border-box;margin:0!important}
+.teacher-assignment-panel .subject-search-widget{position:relative;width:100%;min-width:0}
+.teacher-assignment-panel .subject-search-popup{
+  position:static!important;
+  top:auto!important;
+  left:auto!important;
+  width:100%!important;
+  max-width:none!important;
+  margin-top:8px;
+  box-shadow:0 10px 28px rgba(30,49,80,.12);
+}
+.teacher-assignment-panel .subject-search-results{max-height:300px}
+.teacher-assignment-panel .teacher-assignment-form>.btn{margin-top:8px}
+
+
+/* v2.6.2 — teacher picker shares the same in-flow dropdown geometry as Subject. */
+.teacher-assignment-panel .teacher-search-widget{position:relative;width:100%;min-width:0}
+.teacher-assignment-panel .teacher-search-trigger{width:100%}
+.teacher-assignment-panel .teacher-search-popup{position:static!important;top:auto!important;left:auto!important;width:100%!important;max-width:none!important;margin-top:8px}
+
+/* Enrolled Students: one grid owns all fields so label/control tops always align. */
+.student-roster-filter-form{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:24px;
+  align-items:start;
+  padding:0;
+  margin:0;
+}
+.student-roster-filter-form .roster-filter-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.student-roster-filter-form .roster-filter-field>label{
+  min-height:16px;line-height:16px;margin:0;font-size:10px;font-weight:800;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--muted)
+}
+.student-roster-filter-form select,
+.student-roster-filter-form input[type="search"]{
+  width:100%;height:46px;min-height:46px;box-sizing:border-box;margin:0;
+  border:1px solid var(--line);border-radius:9px;padding:0 12px;background:#fff;color:var(--ink);outline:none
+}
+.student-roster-filter-form select:focus,
+.student-roster-filter-form input[type="search"]:focus{border-color:#6b97d5;box-shadow:0 0 0 3px rgba(25,91,181,.09)}
+.student-roster-filter-form .student-live-search small{display:block;min-height:15px;margin:0;font-size:10px;line-height:15px;color:#8795a8}
+
+/* Teacher assignment list: desktop retains the table; mobile switches to cards so no horizontal scroll is needed. */
+.teacher-section-table-wrap{overflow-x:auto}
+.teacher-section-table{min-width:900px}
+.teacher-section-cards{display:none}
+.teacher-section-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:15px;box-shadow:var(--shadow)}
+.teacher-section-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.teacher-section-card-head h3{margin:0;font-size:15px;line-height:1.35;color:var(--ink)}
+.teacher-section-card-head p{margin:3px 0 0;font-size:11px;color:var(--muted)}
+.teacher-section-card-classes{display:flex;flex-direction:column;gap:3px;margin-top:12px;padding:10px 0;border-top:1px solid #edf1f6}
+.teacher-section-card-classes span,.teacher-section-card-field label{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.teacher-section-card-classes strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.teacher-section-card-form{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr) auto;gap:10px;align-items:end;margin-top:8px}
+.teacher-section-card-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.teacher-section-card-field input,.teacher-section-card-field select{width:100%;height:42px;min-height:42px;border:1px solid #dce4ed;border-radius:8px;padding:0 10px;background:#fff;color:var(--ink);min-width:0}
+.teacher-section-save{min-height:42px;padding:10px 14px}
+
+/* Dashboard summary cards. Detailed class/teacher monthly reporting stays in the Reports module. */
+.dashboard-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.metric-pair{display:flex!important;align-items:baseline;gap:8px}
+.metric-pair em{font-style:normal;color:#aab6c6;font-size:.72em;font-weight:500}
+
+@media(max-width:1050px){
+  .student-roster-filter-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .student-roster-filter-form .student-live-search{grid-column:1 / -1}
+  .dashboard-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .teacher-section-table-wrap{display:none}
+  .teacher-section-cards{display:grid;gap:12px;padding:14px}
+  .teacher-section-card-form{grid-template-columns:1fr}
+  .teacher-section-save{width:100%}
+  .teacher-current-sections .panel-head{padding:16px}
+}
+@media(max-width:650px){
+  .student-roster-filter-form{grid-template-columns:1fr;gap:14px}
+  .student-roster-filter-form .student-live-search{grid-column:auto}
+  .dashboard-metric-grid{grid-template-columns:1fr}
+}
+
+/* v2.8 — Schedules & Reports */
+.report-filter-panel{padding:18px 20px;margin-bottom:16px;overflow:visible}
+.report-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;align-items:end}
+.report-filter-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.report-filter-field label{font-size:10px;font-weight:800;letter-spacing:.045em;text-transform:uppercase;color:var(--muted);min-height:14px}
+.report-filter-field input,.report-filter-field select{width:100%;height:44px;min-height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:#fff;padding:0 11px;color:var(--ink)}
+.report-filter-actions{display:flex;gap:8px;align-items:center;min-height:44px}
+.report-student-search-field{grid-column:span 2}
+.report-summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:16px}
+.report-summary-grid .metric-card small{display:block;margin-top:4px;color:#8290a3;font-size:10px;font-weight:500;line-height:1.35}
+.report-two-column{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
+.report-detail-panel{margin-top:16px}
+.report-table{min-width:0}
+.report-definition-note{background:#f5f8fc;border:1px solid #dce5ef;border-radius:10px;padding:12px 14px;margin:0 0 16px;color:#53657b;font-size:12px;line-height:1.5}
+.report-selected-student{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:17px 19px;margin-bottom:16px}
+.report-selected-student h2{margin:3px 0;font-size:20px}
+.report-selected-student p{margin:0;color:var(--muted);font-size:12px}
+.report-student-results-panel{margin-bottom:16px}
+.report-student-results{display:flex;flex-direction:column;padding:10px}
+.report-student-result{display:flex;justify-content:space-between;align-items:center;gap:14px;text-decoration:none;color:var(--ink);padding:11px 12px;border-radius:8px;border-bottom:1px solid #eef2f6}
+.report-student-result:last-child{border-bottom:0}
+.report-student-result:hover{background:#f7faff}
+.report-student-result span:first-child{min-width:0}
+.report-student-result strong,.report-student-result small{display:block}
+.report-student-result small{color:var(--muted);margin-top:3px}
+.report-search-placeholder{padding:24px;text-align:center;color:var(--muted);font-size:12px}
+.print-only{display:none}
+.report-print-meta{gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 14px;font-size:11px}
+
+@media(max-width:1100px){
+ .report-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .report-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .report-two-column{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+ .report-filter-grid{grid-template-columns:1fr}
+ .report-student-search-field{grid-column:auto}
+ .report-filter-actions{display:grid;grid-template-columns:1fr 1fr}
+ .report-filter-actions .btn{width:100%}
+ .report-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .report-selected-student{align-items:flex-start;flex-direction:column}
+ .report-selected-student .btn{width:100%}
+ .report-export-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
+ .report-export-actions .btn{width:100%}
+}
+@media(max-width:430px){
+ .report-summary-grid{grid-template-columns:1fr 1fr}
+ .report-export-actions{grid-template-columns:1fr}
+}
+
+@media print{
+ @page{size:auto;margin:12mm}
+ body{background:#fff!important;color:#111!important;font-size:10pt}
+ .sidebar,.topbar,.footer,.no-print,.report-export-actions,.mobile-menu{display:none!important}
+ .app-shell,.page-wrap,.content-wrap{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;min-height:0!important}
+ .page-heading{margin:0 0 12px!important;padding:0!important}
+ .page-heading .eyebrow{display:none}
+ .page-heading h1{font-size:20pt!important;margin:0 0 4px!important}
+ .page-heading p{font-size:9pt!important;color:#444!important}
+ .print-only{display:flex!important}
+ .panel,.metric-card,.report-definition-note{box-shadow:none!important;border:1px solid #bbb!important;break-inside:avoid}
+ .panel{overflow:visible!important;margin-bottom:12px!important}
+ .table-scroller{overflow:visible!important}
+ .data-table{display:table!important;width:100%!important;min-width:0!important;font-size:8.5pt!important}
+ .data-table thead{display:table-header-group!important}
+ .data-table tbody{display:table-row-group!important}
+ .data-table tr{display:table-row!important;box-shadow:none!important;border:0!important;break-inside:avoid}
+ .data-table th,.data-table td{display:table-cell!important;padding:5px 6px!important;border-bottom:1px solid #ddd!important;vertical-align:top!important}
+ .data-table td::before{display:none!important}
+ .data-table td>.mobile-card-value{display:contents!important}
+ .report-two-column{display:block!important}
+ .report-summary-grid{display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:6px!important}
+ .status-pill{border:1px solid #999!important;background:transparent!important;color:#111!important}
+ a{color:#111!important;text-decoration:none!important}
+}
+
+/* v2.8 Super Admin Held-session deletion */
+.superadmin-session-action{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 16px;padding:14px 16px;border:1px solid #f1c8ce;border-radius:12px;background:#fff8f9}
+.superadmin-session-action span{display:grid;gap:3px;min-width:0}.superadmin-session-action strong{color:#a93243;font-size:12px}.superadmin-session-action small{color:var(--muted);line-height:1.45}
+.delete-session-panel{max-width:780px}.delete-session-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 18px}.delete-session-facts>div{display:grid;gap:4px;padding:13px;border:1px solid #edf0f3;border-radius:10px}.delete-session-facts span{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.delete-session-facts small{color:var(--muted)}
+.delete-session-form{display:grid;gap:14px}.delete-confirm-check{display:flex;align-items:flex-start;gap:9px;padding:12px 13px;border-radius:10px;background:#fff5f6;color:#8f3040;font-size:11px;font-weight:700}.delete-confirm-check input{width:auto!important;margin-top:2px;flex:0 0 auto}
+@media(max-width:700px){.superadmin-session-action{align-items:stretch;flex-direction:column}.superadmin-session-action .btn{width:100%;justify-content:center}.delete-session-facts{grid-template-columns:1fr}.delete-session-panel .row-actions{display:grid;grid-template-columns:1fr}.delete-session-panel .row-actions .btn{width:100%;justify-content:center}}
+
+
+/* v2.8.1 configurable branding */
+.settings-branding-panel{max-width:760px}.branding-form{max-width:620px}.brand-preview{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--border,#dfe5ef);border-radius:14px;background:#f8fafc}.brand-preview .brand-mark{flex:0 0 auto}.brand-preview>span:last-child{display:flex;flex-direction:column;min-width:0}.brand-preview strong{font-size:1.05rem}.brand-preview small{color:#73809a;margin-top:2px}.branding-updated{margin-top:16px}

@@ -1,0 +1,9 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ app_branding.app_name }} administration{% endblock %}
+
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}">{{ app_branding.app_name }} administration</a></div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
