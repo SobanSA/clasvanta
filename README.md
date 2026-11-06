@@ -97,4 +97,8 @@ Do not commit production secrets, database dumps, imported student spreadsheets,
 
 ## License
 
-No license is included by default. Add the license you intend to use before inviting third parties to reuse or redistribute the project.
+**Free to Use — Attribution Required**
+This project is free and open for everyone to use, modify, and distribute, including for personal, educational, and commercial purposes.
+No payment, subscription, or prior permission is required.
+The only requirement is to give proper credit to the original developer and include a link to this GitHub repository.
+This software is provided "as is", without any warranty.
