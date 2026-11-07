@@ -37,6 +37,7 @@ from .models import (
 
 REPORT_TYPES = [
     ('compliance', 'Schedule compliance'),
+    ('monthly_lecturer', 'Monthly missing & make-up lectures'),
     ('daily', 'Daily attendance'),
     ('class', 'Class attendance'),
     ('student', 'Student attendance history'),
@@ -315,6 +316,98 @@ def _compliance_report(offerings, month_start, report_end, filters):
         'summary': _summary_occurrences(rows),
         'class_rows': _class_aggregate(rows, filters),
         'teacher_rows': _teacher_aggregate(rows),
+    }
+
+
+def _monthly_lecturer_report(offerings, month_start, report_end, filters):
+    """Spreadsheet-style monthly teacher/class lecture register.
+
+    ``lec_in_timetable`` is the number of recurring WeeklySchedule slots assigned
+    to the lecturer for that linked class within the currently filtered offering
+    scope. Approved make-up lectures do not inflate that recurring timetable
+    count. Each merged teaching occurrence is expanded once per linked class so
+    the report remains class-specific like the administrative sheet it replaces.
+    """
+    offerings = list(offerings)
+    occurrence_rows = _occurrences(offerings, month_start, report_end)
+    offering_map = {item.pk: item for item in offerings}
+
+    selected_class_id = filters.get('class_id')
+    selected_programme_id = filters.get('programme_id')
+
+    def visible_groups(offering):
+        groups = _linked_classes(offering)
+        if selected_class_id:
+            groups = [group for group in groups if group.pk == selected_class_id]
+        if selected_programme_id:
+            groups = [group for group in groups if group.programme_id == selected_programme_id]
+        return groups
+
+    timetable_counts = defaultdict(int)
+    if offering_map:
+        schedules = WeeklySchedule.objects.filter(
+            class_subject_id__in=offering_map.keys(),
+        ).select_related('class_subject__lecturer')
+        for schedule in schedules:
+            offering = offering_map.get(schedule.class_subject_id)
+            if not offering:
+                continue
+            lecturer_id = offering.lecturer_id or 0
+            for group in visible_groups(offering):
+                timetable_counts[(lecturer_id, group.pk)] += 1
+
+    rows = []
+    for occurrence in occurrence_rows:
+        offering = occurrence['offering']
+
+        # This register intentionally excludes cancellation and future-schedule
+        # analysis. Those rows belong in the separate compliance/daily reports.
+        if occurrence['source'] == 'MAKEUP':
+            # A cancelled make-up is a cancellation event, not a make-up row
+            # for this report. Approved make-ups that are Held or still unmarked
+            # are both represented as "Make-up Lecture".
+            if occurrence['state'] == 'CANCELLED':
+                continue
+            status = 'Make-up Lecture'
+        elif occurrence['state'] == 'HELD':
+            status = 'Held Lecture'
+        elif occurrence['state'] == 'PENDING':
+            status = 'Missing Lecture'
+        else:
+            # Future regular scheduled rows are intentionally omitted.
+            continue
+
+        lecturer_id = offering.lecturer_id or 0
+        for group in visible_groups(offering):
+            rows.append({
+                'lecturer': offering.lecturer,
+                'class_group': group,
+                'lec_in_timetable': timetable_counts.get((lecturer_id, group.pk), 0),
+                'date': occurrence['date'],
+                'day': occurrence['date'].strftime('%A'),
+                'status': status,
+                'remarks': '',
+                'source': occurrence['source'],
+                'state': occurrence['state'],
+                'offering': offering,
+            })
+
+    rows.sort(key=lambda item: (
+        item['date'],
+        (item['lecturer'].get_full_name() or item['lecturer'].username).lower() if item['lecturer'] else 'zzzz',
+        item['class_group'].code,
+        item['offering'].subject.name.lower(),
+    ))
+    return {
+        'rows': rows,
+        'summary': {
+            'rows': len(rows),
+            'teachers': len({row['lecturer'].pk for row in rows if row['lecturer']}),
+            'classes': len({row['class_group'].pk for row in rows}),
+            'held': sum(row['status'] == 'Held Lecture' for row in rows),
+            'missing': sum(row['status'] == 'Missing Lecture' for row in rows),
+            'makeup': sum(row['status'] == 'Make-up Lecture' for row in rows),
+        },
     }
 
 
@@ -735,6 +828,13 @@ def _xlsx_response(report_type, label, data, month_start, report_end):
              item['scheduled'], item['held'], item['cancelled'], item['pending'], item['makeup'], item['completion']]
             for item in data['teacher_rows']
         ])
+    elif report_type == 'monthly_lecturer':
+        _append_table(ws, ['#', 'Teacher Name', 'Class', 'Lec in timetable', 'Date', 'Day', 'Status', 'Remarks'], [
+            [index,
+             (item['lecturer'].get_full_name() or item['lecturer'].username) if item['lecturer'] else 'Unassigned',
+             item['class_group'].code, item['lec_in_timetable'], item['date'], item['day'], item['status'], item['remarks']]
+            for index, item in enumerate(data['rows'], start=1)
+        ])
     elif report_type == 'daily':
         _append_table(ws, ['Lecture', 'Subject', 'Code', 'Classes', 'Teacher', 'Type', 'Status', 'Present', 'Absent'], [
             [row['lecture_number'], row['offering'].subject.name, row['offering'].subject.code, row['offering'].class_codes_display,
@@ -804,7 +904,9 @@ def reports(request):
     filters = _filter_models(request, month_start, report_end)
     offerings = list(_offering_queryset(month_start, report_end, filters))
 
-    if report_type == 'daily':
+    if report_type == 'monthly_lecturer':
+        data = _monthly_lecturer_report(offerings, month_start, report_end, filters)
+    elif report_type == 'daily':
         selected_date = _parse_date(request.GET.get('date', ''), report_end)
         # For a daily report the relevant terms/sections come from the date itself.
         daily_filters = _filter_models(request, selected_date, selected_date)

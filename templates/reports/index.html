@@ -83,7 +83,24 @@
   {% if selected_lecturer %}<span>Lecturer: {{ selected_lecturer.get_full_name|default:selected_lecturer.username }}</span>{% endif %}
 </div>
 
-{% if report_type == 'compliance' %}
+{% if report_type == 'monthly_lecturer' %}
+<div class="report-definition-note"><strong>Monthly lecturer register:</strong> shows <strong>Held</strong>, <strong>Missing Lecture</strong>, and <strong>Make-up Lecture</strong> rows. Cancelled and future Scheduled lectures are intentionally excluded and remain in the separate compliance report. “Lec in timetable” is the number of recurring weekly timetable slots assigned to that teacher/class. The duration / “No. of Lec” column from the sample sheet is omitted.</div>
+<div class="attendance-day-summary report-summary-grid">
+  <div class="metric-card compact"><span>Rows</span><strong>{{ data.summary.rows }}</strong></div>
+  <div class="metric-card compact"><span>Lecturers</span><strong>{{ data.summary.teachers }}</strong></div>
+  <div class="metric-card compact"><span>Classes</span><strong>{{ data.summary.classes }}</strong></div>
+  <div class="metric-card compact"><span>Held</span><strong>{{ data.summary.held }}</strong></div>
+  <div class="metric-card compact"><span>Missing</span><strong>{{ data.summary.missing }}</strong></div>
+  <div class="metric-card compact"><span>Make-up</span><strong>{{ data.summary.makeup }}</strong></div>
+</div>
+<section class="panel report-detail-panel">
+  <div class="panel-head"><div><h2>Monthly lecturer register</h2><p class="help-text">{{ month_start|date:"j F" }} – {{ report_end|date:"j F Y" }} · Held, missing and make-up rows by teacher and class</p></div><strong>{{ data.rows|length }}</strong></div>
+  <div class="table-scroller"><table class="data-table report-table"><thead><tr><th>#</th><th>Teacher Name</th><th>Class</th><th>Lec in timetable</th><th>Date</th><th>Day</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
+    {% for row in data.rows %}<tr><td>{{ forloop.counter }}</td><td>{% if row.lecturer %}<strong>{{ row.lecturer.get_full_name|default:row.lecturer.username }}</strong>{% else %}<span class="warning-text">Unassigned</span>{% endif %}</td><td><strong>{{ row.class_group.code }}</strong></td><td>{{ row.lec_in_timetable }}</td><td>{{ row.date|date:"d/m/Y" }}</td><td>{{ row.day }}</td><td>{% if row.status == 'Make-up Lecture' %}<span class="status-pill makeup-pill">{{ row.status }}</span>{% elif row.status == 'Held Lecture' %}<span class="status-pill done">{{ row.status }}</span>{% else %}<span class="status-pill status-pending">{{ row.status }}</span>{% endif %}</td><td>{{ row.remarks|default:"" }}</td></tr>{% empty %}<tr><td colspan="8" class="empty-cell">No Held, missing, or make-up lectures match these monthly filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+
+{% elif report_type == 'compliance' %}
 <div class="report-definition-note"><strong>Historical timetable note:</strong> Scheduled / Not Marked reconstruction uses the recurring timetable currently stored for each subject section. Dated Held and Cancelled sessions remain exact.</div>
 <div class="attendance-day-summary report-summary-grid">
   <div class="metric-card compact"><span>Scheduled</span><strong>{{ data.summary.scheduled }}</strong><small>Regular + approved make-up</small></div>

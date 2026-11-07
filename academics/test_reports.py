@@ -239,6 +239,38 @@ class ReportsV28Tests(TestCase):
         })
         self.assertEqual(fines.context['data']['summary']['outstanding_total'], Decimal('0.00'))
 
+
+    def test_monthly_lecturer_report_matches_sheet_style_and_omits_duration_column(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('reports'), {
+            'report': 'monthly_lecturer', 'month': self._month(), 'class': self.class_a.pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        rows = response.context['data']['rows']
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(row['lecturer'] == self.teacher for row in rows))
+        self.assertTrue(all(row['class_group'] == self.class_a for row in rows))
+        self.assertTrue(all(row['lec_in_timetable'] == 3 for row in rows))
+        self.assertEqual(
+            {row['status'] for row in rows},
+            {'Held Lecture', 'Missing Lecture', 'Make-up Lecture'},
+        )
+        self.assertEqual(response.context['data']['summary']['held'], 1)
+        self.assertEqual(response.context['data']['summary']['missing'], 1)
+        self.assertEqual(response.context['data']['summary']['makeup'], 1)
+        self.assertTrue(all(row['remarks'] == '' for row in rows))
+
+        export = self.client.get(reverse('reports'), {
+            'report': 'monthly_lecturer', 'month': self._month(), 'class': self.class_a.pk,
+            'export': 'xlsx',
+        })
+        self.assertEqual(export.status_code, 200)
+        self.assertEqual(
+            export['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        self.assertTrue(export.content.startswith(b'PK'))
+
     def test_fine_report_and_excel_export(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('reports'), {

@@ -1,0 +1,26 @@
+Clasvanta v2.8.4 — Monthly Lecturer Register
+Patch base: v2.8.3
+
+Files replaced/added:
+- academics/reports.py
+- academics/test_reports.py
+- templates/reports/index.html
+- CHANGELOG_V2_8_4.md
+- PATCH_MANIFEST_V2_8_4.txt
+- INSTALL_V2_8_4.txt
+
+Database migration: NO
+
+Report columns:
+# | Teacher Name | Class | Lec in timetable | Date | Day | Status | Remarks
+
+Included statuses:
+- Held Lecture
+- Missing Lecture
+- Make-up Lecture
+
+Excluded from this report:
+- Cancelled
+- Future Scheduled
+
+The omitted sample column “No. of Lec / 1.5 Hour” is not included.

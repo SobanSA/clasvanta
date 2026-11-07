@@ -1,0 +1,33 @@
+Clasvanta v2.8.4 — Monthly Lecturer Register
+
+BASE VERSION
+Install over Clasvanta v2.8.3.
+
+FILEZILLA
+Upload the contents of this patch into the Django application root and overwrite matching files while preserving folders.
+
+Expected application root on the existing Plesk deployment:
+/var/www/vhosts/pgcadp.duckdns.org/attendance_app/
+
+DATABASE
+No migration is required. No models or existing migrations are changed.
+
+SSH
+cd /var/www/vhosts/pgcadp.duckdns.org/attendance_app/
+source .venv/bin/activate
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test academics.test_reports --settings=config.test_settings
+python manage.py collectstatic --noinput
+
+Expected migration check: No changes detected.
+Then restart the Python application from Plesk.
+
+VERIFY
+1. Open Reports.
+2. Select “Monthly missing & make-up lectures” / monthly lecturer register.
+3. Choose a month and optional programme/class/subject/lecturer filters.
+4. Verify columns: #, Teacher Name, Class, Lec in timetable, Date, Day, Status, Remarks.
+5. Verify Held, Missing Lecture and Make-up Lecture rows are present.
+6. Verify Cancelled and future Scheduled rows are absent.
+7. Export Excel and verify the same columns/rows.
