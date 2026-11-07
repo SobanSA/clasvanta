@@ -1,0 +1,11 @@
+Clasvanta v2.8.2 lecturer-name consistency hotfix
+
+Replace/add:
+- academics/views.py
+- academics/test_dashboard.py
+- templates/admin_panel/dashboard.html
+- CHANGELOG_V2_8_2.md
+- INSTALL_V2_8_2.txt
+- PATCH_MANIFEST_V2_8_2.txt
+
+Migration required: NO

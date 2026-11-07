@@ -1,0 +1,17 @@
+Clasvanta v2.8.2 — Lecturer Name Consistency Hotfix
+
+Upload the patch contents into the application root and overwrite matching files.
+
+Server path used by the current deployment:
+/var/www/vhosts/pgcadp.duckdns.org/attendance_app/
+
+SSH verification:
+
+cd /var/www/vhosts/pgcadp.duckdns.org/attendance_app/
+source .venv/bin/activate
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test academics.test_dashboard --settings=config.test_settings
+python manage.py collectstatic --noinput
+
+No database migration is required. Restart the Python application from Plesk after upload.

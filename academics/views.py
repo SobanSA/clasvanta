@@ -64,7 +64,7 @@ def admin_dashboard(request):
         'makeup_month': makeup_month,
         'month_start': month_start,
         'recent_sessions': LectureSession.objects.select_related(
-            'class_subject__class_group', 'class_subject__subject', 'submitted_by'
+            'class_subject__class_group', 'class_subject__subject', 'class_subject__lecturer', 'submitted_by'
         ).order_by('-submitted_at')[:8],
         'recent_audits': AttendanceAudit.objects.select_related(
             'actor', 'student__user', 'session__class_subject__subject'
