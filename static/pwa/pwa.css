@@ -1,0 +1,10 @@
+/* Additive Clasvanta 2.8.3 install UX, without replacing application styling. */
+.pwa-install-button {align-items:center;background:#0d63bc;border:1px solid #0b58a9;border-radius:10px;color:#fff;cursor:pointer;display:inline-flex;font:inherit;font-size:.82rem;font-weight:700;justify-content:center;min-height:34px;padding:7px 12px;white-space:nowrap;z-index:20}
+.pwa-install-button:hover,.pwa-install-button:focus-visible {background:#084e9c}
+.pwa-install-button[hidden]{display:none!important}
+.pwa-install-floating {bottom:max(18px,env(safe-area-inset-bottom));position:fixed;right:18px;z-index:999}
+.pwa-ios-guide{background:#fff;border:1px solid #b9cfe9;border-radius:14px;bottom:max(65px,calc(env(safe-area-inset-bottom) + 65px));box-shadow:0 12px 40px rgba(10,45,92,.25);color:#21324c;font:inherit;font-size:.92rem;line-height:1.5;max-width:min(350px,calc(100vw - 28px));padding:16px;position:fixed;right:14px;z-index:1000}
+.pwa-ios-guide p{margin:0 0 14px}
+.pwa-close-guide{background:#e8f0fa;border:1px solid #acc4dd;border-radius:8px;color:#145187;cursor:pointer;font:inherit;font-weight:700;padding:7px 12px}
+.pwa-install-button:focus-visible,.pwa-close-guide:focus-visible{outline:3px solid #7fd2e4;outline-offset:2px}
+@media(max-width:540px){.top-right .pwa-install-button{min-height:32px;padding:6px 9px}.pwa-ios-guide{left:14px;right:14px;max-width:none}}

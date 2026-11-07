@@ -10,7 +10,12 @@ from academics import reports as report_views
 from attendance import views as attendance_views
 from fines import views as fine_views
 
+from config import pwa as pwa_views
+
 urlpatterns = [
+    path('manifest.webmanifest', pwa_views.manifest, name='pwa_manifest'),
+    path('service-worker.js', pwa_views.service_worker, name='pwa_service_worker'),
+    path('offline/', pwa_views.offline_page, name='pwa_offline'),
     path('', RedirectView.as_view(pattern_name='dashboard', permanent=False), name='home'),
     path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html', redirect_authenticated_user=True), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

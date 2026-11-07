@@ -95,10 +95,18 @@ Approved make-up classes are one-off dated classes and remain separate from the 
 
 Do not commit production secrets, database dumps, imported student spreadsheets, or collected static output. The supplied `.gitignore` excludes common local/private artifacts.
 
+## Installable Progressive Web App (v2.8.3)
+
+Clasvanta is installable as a standalone PWA on compatible Android, iPhone/iPad, Windows, and macOS devices over HTTPS. Chromium browsers can expose **Install app**; on iPhone/iPad Safari use **Share → Add to Home Screen**.
+
+The dynamic `/manifest.webmanifest` reflects the Super Admin's application name and subtitle. A root-scoped service worker caches only public static assets and a generic offline guidance page. Private pages, attendance, reports, student records, and fines stay **online-only**.
+
+PWA setup on a Plesk-hosted Django installation: update the files, run `python manage.py check`, run `python manage.py collectstatic --noinput`, restart the application, and confirm that the manifest and service-worker URLs load successfully. No database migration is needed. See `INSTALL_V2_8_3.txt`.
+
 ## License
 
 **Free to Use — Attribution Required**
 This project is free and open for everyone to use, modify, and distribute, including for personal, educational, and commercial purposes.
 No payment, subscription, or prior permission is required.
-The only requirement is to give proper credit to the original developer and include a link to this GitHub repository.
+The only requirement is to give proper credit to the original developer and include a link to this GitHub repository: https://github.com/SobanSA/clasvanta
 This software is provided "as is", without any warranty.

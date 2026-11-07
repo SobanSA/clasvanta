@@ -1,0 +1,39 @@
+CLASVANTA v2.8.3 PWA PATCH — BRANCH release/v2.8.3-pwa
+=============================================================
+Baseline: v2.8.2 Lecturer Name Hotfix (main: 4d9ef10b5725075ce6ce65c528d981f395f580c8)
+Repository: https://github.com/SobanSA/clasvanta
+
+FEATURES
+- Installable PWA for supported desktop/Android browsers and iOS home screen.
+- Dynamic application name/subtitle via existing Super Admin branding settings.
+- Root service worker and generic offline help page.
+- PWA icons in 192px, 512px, maskable 512px and Apple 180px formats.
+- Existing attendance, lecturer hotfix and fines logic unchanged.
+- Offline private data access intentionally unavailable.
+- Attribution-required licence.
+
+HOW TO DEPLOY USING FILEZILLA AND PLESK
+1. Back up the current v2.8.2 project files and database.
+2. Download the release branch ZIP from GitHub and extract on your PC.
+3. Upload/merge all source files into the existing project directory
+   containing manage.py. Do NOT delete your .env, virtualenv, private/,
+   public/, media or the production database.
+4. Activate your existing Django virtualenv then execute:
+   python manage.py check
+   python manage.py collectstatic --noinput
+5. Restart the Python application through Plesk.
+
+VERIFY
+  https://YOUR-DOMAIN/manifest.webmanifest
+  https://YOUR-DOMAIN/service-worker.js
+  https://YOUR-DOMAIN/offline/
+  https://YOUR-DOMAIN/static/pwa/icon-192.png
+
+HTTPS is required for normal PWA installation; localhost is allowed for tests.
+No database migrations or new dependencies are required.
+To test against the isolated SQLite settings:
+  DJANGO_SECRET_KEY=test-only-secret python manage.py test academics.test_pwa --settings=config.test_settings
+
+ROLLBACK
+Restore the v2.8.2 branch files, run collectstatic, restart Plesk, and clear
+any installed service worker from the browser if needed.
