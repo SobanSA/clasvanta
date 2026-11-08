@@ -1,0 +1,21 @@
+Clasvanta v2.8.5 — deployment
+
+1. Extract the PATCH ZIP.
+2. Upload its contents into the existing attendance_app directory with FileZilla, preserving folders and overwriting matching files.
+3. SSH into the project and run:
+
+cd /path/to/clasvanta/
+source .venv/bin/activate
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py migrate
+python manage.py test academics.test_branding academics.test_reports fines.tests --settings=config.test_settings
+python manage.py collectstatic --noinput
+
+4. Restart the Python application from Plesk.
+5. As Super Admin, open Settings → Application branding and set Institute name if desired. The default is Clasvanta.
+6. Open Fines and verify Print challan opens an A5 print-ready page.
+7. Open Reports → Lec in timetable compliance and verify filters/Excel export.
+
+Migration required: academics/migrations/0006_appbranding_institute_name.py
+This migration only adds the configurable institute_name field with default Clasvanta.
