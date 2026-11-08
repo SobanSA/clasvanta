@@ -289,3 +289,26 @@ class ReportsV28Tests(TestCase):
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
         self.assertTrue(export.content.startswith(b'PK'))
+
+    def test_timetable_compliance_excludes_cancelled_and_uses_held_makeup(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('reports'), {
+            'report': 'timetable_compliance',
+            'month': self._month(),
+            'class': self.class_a.pk,
+        })
+        self.assertEqual(response.status_code, 200)
+        rows = response.context['data']['rows']
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row['lecturer'], self.teacher)
+        self.assertEqual(row['class_group'], self.class_a)
+        self.assertEqual(row['lec_in_timetable'], 3)
+        # Lecture 2 is Cancelled and deliberately excluded from this report.
+        self.assertEqual(row['expected'], 2)
+        self.assertEqual(row['held'], 1)
+        self.assertEqual(row['missing'], 1)
+        self.assertEqual(row['makeup_held'], 1)
+        self.assertEqual(row['delivered'], 2)
+        self.assertEqual(row['compliance'], 100.0)
+        self.assertContains(response, 'How to read compliance')
