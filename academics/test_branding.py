@@ -22,6 +22,7 @@ class BrandingV281Tests(TestCase):
         branding = AppBranding.objects.get(pk=1)
         self.assertEqual(branding.app_name, 'Clasvanta')
         self.assertEqual(branding.subtitle, 'Academic Attendance & Management')
+        self.assertEqual(branding.institute_name, 'Clasvanta')
 
     def test_superuser_can_change_branding(self):
         self.client.force_login(self.superuser)
@@ -30,12 +31,14 @@ class BrandingV281Tests(TestCase):
             {
                 'app_name': 'Northbridge Campus',
                 'subtitle': 'Attendance & Academic Operations',
+                'institute_name': 'Northbridge Institute',
             },
         )
         self.assertRedirects(response, reverse('branding_settings_manage'))
         branding = AppBranding.objects.get(pk=1)
         self.assertEqual(branding.app_name, 'Northbridge Campus')
         self.assertEqual(branding.subtitle, 'Attendance & Academic Operations')
+        self.assertEqual(branding.institute_name, 'Northbridge Institute')
         self.assertEqual(branding.updated_by, self.superuser)
 
         response = self.client.get(reverse('dashboard'))
@@ -51,17 +54,19 @@ class BrandingV281Tests(TestCase):
         self.client.force_login(self.superuser)
         response = self.client.post(
             reverse('branding_settings_manage'),
-            {'app_name': '   ', 'subtitle': '   '},
+            {'app_name': '   ', 'subtitle': '   ', 'institute_name': '   '},
         )
         self.assertEqual(response.status_code, 200)
         branding = AppBranding.objects.get(pk=1)
         self.assertEqual(branding.app_name, 'Clasvanta')
         self.assertEqual(branding.subtitle, 'Academic Attendance & Management')
+        self.assertEqual(branding.institute_name, 'Clasvanta')
 
     def test_login_page_uses_current_branding(self):
         branding = AppBranding.objects.get(pk=1)
         branding.app_name = 'Campus One'
         branding.subtitle = 'Academic Services'
+        branding.institute_name = 'Campus One Institute'
         branding.updated_by = self.superuser
         branding.save()
 
