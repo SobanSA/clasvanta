@@ -882,16 +882,18 @@ def branding_settings_manage(request):
         defaults={
             'app_name': 'Clasvanta',
             'subtitle': 'Academic Attendance & Management',
+            'institute_name': 'Clasvanta',
         },
     )
     if request.method == 'POST':
         branding.app_name = request.POST.get('app_name', '').strip()
         branding.subtitle = request.POST.get('subtitle', '').strip()
+        branding.institute_name = request.POST.get('institute_name', '').strip()
         branding.updated_by = request.user
         try:
             branding.full_clean()
             branding.save()
-            messages.success(request, 'Application branding updated.')
+            messages.success(request, 'Application and institute branding updated.')
             return redirect('branding_settings_manage')
         except ValidationError as exc:
             messages.error(request, f'Could not save branding: {exc}')
