@@ -1,0 +1,52 @@
+Clasvanta App Icon Patch v2.8.8
+================================
+
+This local FileZilla patch uses the supplied Clasvanta icon and updates:
+
+- Browser favicon: 64x64
+- PWA icon: 192x192
+- PWA icon: 512x512
+- Maskable Android/PWA icon: 512x512 with safe padding
+- Apple touch icon: 180x180
+- Manifest icon URLs with cache-busting
+- Service-worker cache version so old icon assets are discarded
+
+NO DATABASE MIGRATION IS REQUIRED.
+
+INSTALLATION
+------------
+
+1. Extract this ZIP on your computer.
+2. Upload BOTH:
+   - apply_icon_patch.py
+   - payload/ folder
+
+   into attendance_app/ beside manage.py, preserving the payload folder structure.
+
+3. SSH:
+
+   cd /path/to/attendance_app
+   source .venv/bin/activate
+   python apply_icon_patch.py
+   python manage.py check
+   python manage.py collectstatic --noinput
+
+4. Restart the Python application from Plesk.
+5. Hard-refresh the browser with Ctrl+F5.
+
+INSTALLED PWA NOTE
+------------------
+Browsers can refresh web favicons/cache automatically after the new service worker activates.
+However, Android/Windows/iOS may retain the launcher icon of an already-installed PWA.
+If the launcher icon still remains old after the update:
+- uninstall the installed Clasvanta PWA/app shortcut once
+- open Clasvanta in the browser
+- install/add it to the home screen again
+
+BACKUP
+------
+The installer creates a timestamped backup folder:
+
+.app_icon_v288_backup_YYYYMMDD_HHMMSS
+
+This patch does not alter student, attendance, fine, academic or database data.
