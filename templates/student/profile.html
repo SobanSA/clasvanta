@@ -5,7 +5,7 @@
 <div class="page-heading student-page-heading">
   <span class="eyebrow">STUDENT PORTAL</span>
   <h1>My Profile</h1>
-  <p>Academic enrollment details are read-only.</p>
+  <p>Academic enrollment details and regular weekly timetable are read-only.</p>
 </div>
 
 <div class="student-profile-layout">
@@ -31,4 +31,32 @@
     <a class="btn btn-primary" href="{% url 'password_change' %}">Change password</a>
   </aside>
 </div>
+
+<section class="profile-workload-section">
+  <div class="section-heading">
+    <div><h2>My weekly lectures</h2><p>Regular recurring timetable for your current class. One-off make-up classes remain on My Schedule.</p></div>
+  </div>
+  <div class="metric-grid workload-metrics">
+    <article class="metric-card"><span>Weekly lectures</span><strong>{{ weekly.summary.lecture_count }}</strong></article>
+    <article class="metric-card"><span>Lecture days</span><strong>{{ weekly.summary.teaching_days }}</strong></article>
+    <article class="metric-card"><span>Subjects</span><strong>{{ weekly.summary.subject_count }}</strong></article>
+    <article class="metric-card"><span>Lecturers</span><strong>{{ weekly.summary.lecturer_count }}</strong></article>
+  </div>
+
+  <div class="weekly-workload-grid">
+    {% for day in weekly.days %}
+    <article class="panel workload-day-card">
+      <div class="workload-day-head"><h3>{{ day.label }}</h3><span class="count-badge">{{ day.lectures|length }}</span></div>
+      <div class="workload-day-list">
+        {% for item in day.lectures %}
+        <div class="workload-lecture-row">
+          <span class="workload-lecture-no">L{{ item.lecture_number }}</span>
+          <div><strong>{{ item.subject.name }}</strong><small>{{ item.subject.code }}{% if item.lecturer %} · {{ item.lecturer.get_full_name|default:item.lecturer.username }}{% endif %}</small></div>
+        </div>
+        {% empty %}<div class="workload-empty">No regular lectures.</div>{% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}
