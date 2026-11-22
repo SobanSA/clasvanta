@@ -1,8 +1,11 @@
 /.venv/
 /__pycache__/
+**/__pycache__/
 *.py[cod]
 *.sqlite3
 .env
+.env.*
+!.env.example
 /private/uploads/*
 !/private/uploads/.gitkeep
 /public/static/
@@ -13,3 +16,9 @@ htmlcov/
 .pytest_cache/
 .idea/
 .vscode/
+# Local deployment/patch backups and scratch files
+.*_backup_*/
+backup_*/
+*.bak*
+*.before_*
+/tmp/

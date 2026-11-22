@@ -1,0 +1,19 @@
+/* Weekly timetable/workload cards shared by lecturer and student profiles. */
+.profile-workload-section{margin-top:24px}
+.workload-metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+.weekly-workload-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.workload-day-card{min-width:0;overflow:hidden;padding:0}
+.workload-day-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfcfe}
+.workload-day-head h3{margin:0;font-size:13px;color:var(--ink)}
+.workload-day-list{display:grid}
+.workload-lecture-row{display:flex;align-items:flex-start;gap:11px;padding:13px 15px;border-top:1px solid #eef1f5;min-width:0}
+.workload-lecture-row:first-child{border-top:0}
+.workload-lecture-row>div{min-width:0;flex:1}
+.workload-lecture-row strong,.workload-lecture-row small{display:block;overflow-wrap:anywhere}
+.workload-lecture-row strong{font-size:11px;color:var(--ink)}
+.workload-lecture-row small{margin-top:3px;font-size:9px;line-height:1.45;color:var(--muted)}
+.workload-lecture-no{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:9px;background:#ebf2fc;color:var(--blue);font-size:11px;font-weight:850}
+.workload-empty{padding:18px 15px;color:var(--muted);font-size:10px;text-align:center}
+@media(max-width:1000px){.weekly-workload-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.workload-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.weekly-workload-grid{grid-template-columns:1fr}}
+@media(max-width:380px){.workload-metrics{grid-template-columns:1fr}}

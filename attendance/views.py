@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 from accounts.views import role_required
 from academics.models import AcademicTerm, ClassSubject, StudentProfile, WeeklySchedule
+from academics.workload import weekly_workload_for_lecturer
 from .models import AttendanceSettings, MakeupClass, LectureSession, AttendanceRecord, AttendanceAudit, SessionDeletionAudit
 from .services import (
     can_write, is_admin, submit_attendance, cancel_class,
@@ -76,6 +77,15 @@ def lecturer_dashboard(request):
     return render(request, 'attendance/lecturer_dashboard.html', {
         'today': timezone.localdate(), 'lectures': _schedule_today(request.user),
         'policy': policy,
+    })
+
+
+@role_required('LECTURER')
+@require_http_methods(['GET'])
+def lecturer_profile(request):
+    weekly = weekly_workload_for_lecturer(request.user)
+    return render(request, 'lecturer/profile.html', {
+        'weekly': weekly,
     })
 
 
@@ -287,59 +297,136 @@ def _day_rows(selected_date, active):
     regular = WeeklySchedule.objects.none()
     makeups = MakeupClass.objects.none()
     if active and active.start_date <= selected_date <= active.end_date:
+        term_scope = (
+            Q(class_subject__class_groups__term=active) |
+            Q(
+                class_subject__class_group__term=active,
+                class_subject__class_groups__isnull=True,
+            )
+        )
         regular = WeeklySchedule.objects.filter(
-            weekday=selected_date.weekday(), class_subject__class_groups__term=active,
+            term_scope,
+            weekday=selected_date.weekday(),
         ).select_related(
             'class_subject__class_group__term', 'class_subject__subject', 'class_subject__lecturer',
         ).prefetch_related('class_subject__class_groups').distinct()
         makeups = MakeupClass.objects.filter(
-            lecture_date=selected_date, status=MakeupClass.APPROVED,
-            class_subject__class_groups__term=active,
+            term_scope,
+            lecture_date=selected_date,
+            status=MakeupClass.APPROVED,
         ).select_related(
             'class_subject__class_group__term', 'class_subject__subject', 'class_subject__lecturer',
         ).prefetch_related('class_subject__class_groups').distinct()
+
+    today = timezone.localdate()
     rows = []
+
+    def add_row(*, source, offering, lecture_number, schedule=None, makeup=None):
+        count, merged = _student_count(offering)
+        session = _session_for(offering.pk, selected_date, lecture_number)
+        if session and session.status == 'SUBMITTED':
+            state = 'HELD'
+            label = 'Held'
+        elif session and session.status == 'CANCELLED':
+            state = 'CANCELLED'
+            label = 'Cancelled'
+        elif selected_date < today:
+            state = 'MISSED'
+            label = 'Missed / Not marked'
+        elif selected_date > today:
+            state = 'SCHEDULED'
+            label = 'Scheduled'
+        else:
+            state = 'PENDING'
+            label = 'Pending'
+        rows.append({
+            'source': source,
+            'schedule': schedule,
+            'makeup': makeup,
+            'offering': offering,
+            'lecture_number': lecture_number,
+            'session': session,
+            'student_count': count,
+            'merged': merged,
+            'state': state,
+            'state_label': label,
+        })
+
     for sch in regular:
-        count, merged = _student_count(sch.class_subject)
-        rows.append({
-            'source': 'REGULAR', 'schedule': sch, 'makeup': None,
-            'offering': sch.class_subject, 'lecture_number': sch.lecture_number,
-            'session': _session_for(sch.class_subject_id, selected_date, sch.lecture_number),
-            'student_count': count, 'merged': merged,
-        })
+        add_row(
+            source='REGULAR', offering=sch.class_subject,
+            lecture_number=sch.lecture_number, schedule=sch,
+        )
     for makeup in makeups:
-        count, merged = _student_count(makeup.class_subject)
-        rows.append({
-            'source': 'MAKEUP', 'schedule': None, 'makeup': makeup,
-            'offering': makeup.class_subject, 'lecture_number': makeup.lecture_number,
-            'session': _session_for(makeup.class_subject_id, selected_date, makeup.lecture_number),
-            'student_count': count, 'merged': merged,
-        })
-    return sorted(rows, key=lambda x: (x['lecture_number'], x['offering'].subject.name.lower()))
+        add_row(
+            source='MAKEUP', offering=makeup.class_subject,
+            lecture_number=makeup.lecture_number, makeup=makeup,
+        )
+
+    return sorted(
+        rows,
+        key=lambda item: (
+            item['lecture_number'], item['offering'].subject.name.lower(), item['source'],
+        ),
+    )
 
 
 @role_required('ADMIN')
 def admin_sessions(request):
     today = timezone.localdate()
+    active = AcademicTerm.objects.filter(is_active=True).first()
+    today_in_term = bool(active and active.start_date <= today <= active.end_date)
+    default_date = today if today_in_term else (active.start_date if active else today)
+
     raw_date = request.GET.get('date', '').strip()
-    selected_date = today
+    selected_date = default_date
     if raw_date:
         try:
-            selected_date = date.fromisoformat(raw_date)
+            candidate = date.fromisoformat(raw_date)
+            if active and not (active.start_date <= candidate <= active.end_date):
+                messages.error(
+                    request,
+                    f'Select a date within the active term ({active.start_date} to {active.end_date}).',
+                )
+            else:
+                selected_date = candidate
         except ValueError:
-            messages.error(request, 'Invalid attendance date. Showing today instead.')
-    active = AcademicTerm.objects.filter(is_active=True).first()
+            messages.error(request, 'Invalid date. Showing the default active-term date instead.')
+
     date_in_term = bool(active and active.start_date <= selected_date <= active.end_date)
     rows = _day_rows(selected_date, active) if date_in_term else []
-    held_count = sum(1 for row in rows if row['session'] and row['session'].status == 'SUBMITTED')
-    cancelled_count = sum(1 for row in rows if row['session'] and row['session'].status == 'CANCELLED')
-    pending_count = sum(1 for row in rows if not row['session'])
+
+    held_count = sum(row['state'] == 'HELD' for row in rows)
+    cancelled_count = sum(row['state'] == 'CANCELLED' for row in rows)
+    unmarked_count = sum(row['state'] in {'MISSED', 'PENDING', 'SCHEDULED'} for row in rows)
+    makeup_count = sum(row['source'] == 'MAKEUP' for row in rows)
+    regular_count = sum(row['source'] == 'REGULAR' for row in rows)
+
+    if selected_date < today:
+        unmarked_label = 'Missed'
+    elif selected_date > today:
+        unmarked_label = 'Upcoming'
+    else:
+        unmarked_label = 'Pending'
+
     return render(request, 'attendance/admin_sessions.html', {
-        'selected_date': selected_date, 'today': today,
-        'is_today': selected_date == today, 'is_future': selected_date > today,
-        'schedule_rows': rows, 'scheduled_count': len(rows),
-        'held_count': held_count, 'cancelled_count': cancelled_count, 'pending_count': pending_count,
-        'active_term': active, 'date_in_term': date_in_term,
+        'selected_date': selected_date,
+        'today': today,
+        'today_in_term': today_in_term,
+        'is_today': selected_date == today,
+        'is_future': selected_date > today,
+        'is_past': selected_date < today,
+        'schedule_rows': rows,
+        'scheduled_count': len(rows),
+        'regular_count': regular_count,
+        'makeup_count': makeup_count,
+        'held_count': held_count,
+        'cancelled_count': cancelled_count,
+        'unmarked_count': unmarked_count,
+        'unmarked_label': unmarked_label,
+        'pending_count': unmarked_count,
+        'active_term': active,
+        'date_in_term': date_in_term,
         'super_admin': request.user.is_superuser,
     })
 

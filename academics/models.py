@@ -67,6 +67,7 @@ class Subject(models.Model):
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='student_profile')
+    father_name = models.CharField(max_length=160, blank=True, default='')
 
     def __str__(self):
         return f'{self.user.get_full_name()} ({self.user.username})'

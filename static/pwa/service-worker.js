@@ -1,11 +1,11 @@
-/* Clasvanta 2.8.3 — public assets only. NEVER cache attendance or private pages. */
+/* Clasvanta 2.8.8 — refreshed app icons; public assets only. NEVER cache attendance or private pages. */
 'use strict';
-const CACHE_NAME = 'clasvanta-static-v2.8.3';
+const CACHE_NAME = 'clasvanta-static-v2.8.8-icon';
 const CACHE_PREFIX = 'clasvanta-static-';
 const OFFLINE = '/offline/';
 const PRECACHE = [
-  OFFLINE, '/static/pwa/icon-192.png', '/static/pwa/icon-512.png',
-  '/static/pwa/icon-maskable-512.png', '/static/pwa/apple-touch-icon.png',
+  OFFLINE, '/static/pwa/icon-192.png?v=288', '/static/pwa/icon-512.png?v=288',
+  '/static/pwa/icon-maskable-512.png?v=288', '/static/pwa/apple-touch-icon.png?v=288',
   '/static/pwa/pwa.css'
 ];
 self.addEventListener('install', event => {

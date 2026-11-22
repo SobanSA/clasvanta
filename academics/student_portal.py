@@ -1,4 +1,4 @@
-"""Student-facing portal views for Clasvanta v2.7.
+"""Student-facing portal views for PGC Attendance v2.7.
 
 All data is derived from the authenticated student's own StudentProfile. No
 student selector or student id is accepted by these views.
@@ -21,6 +21,7 @@ from fines.models import FineLedgerEntry, FinePolicy
 from fines.services import subject_balance
 
 from .models import ClassMembership, ClassSubject, StudentProfile, WeeklySchedule
+from .workload import weekly_workload_for_offerings
 
 
 def student_required(view_func):
@@ -371,9 +372,12 @@ def my_fines(request):
 @require_GET
 def profile(request):
     profile_obj, membership = _student_scope(request.user)
-    assigned_subject_count = len(_assigned_offerings(membership)) if membership else 0
+    offerings = _assigned_offerings(membership)
+    assigned_subject_count = len(offerings) if membership else 0
+    weekly = weekly_workload_for_offerings(offerings)
     return render(request, 'student/profile.html', {
         'profile': profile_obj,
         'membership': membership,
         'assigned_subject_count': assigned_subject_count,
+        'weekly': weekly,
     })

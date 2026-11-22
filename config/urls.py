@@ -7,10 +7,9 @@ from academics import views as academic_views
 from academics import lecturers as lecturer_admin_views
 from academics import student_portal as student_portal_views
 from academics import reports as report_views
+from config import pwa as pwa_views
 from attendance import views as attendance_views
 from fines import views as fine_views
-
-from config import pwa as pwa_views
 
 urlpatterns = [
     path('manifest.webmanifest', pwa_views.manifest, name='pwa_manifest'),
@@ -25,6 +24,8 @@ urlpatterns = [
     path('structure/', academic_views.academic_structure, name='academic_structure'),
     path('students/', academic_views.students_list, name='students_list'),
     path('students/add/', academic_views.student_add, name='student_add'),
+    path('students/<int:student_id>/edit/', academic_views.student_edit, name='student_edit'),
+    path('students/<int:student_id>/delete/', academic_views.student_delete, name='student_delete'),
     path('students/attendance/', academic_views.student_attendance, name='student_attendance'),
     path('student/attendance/', student_portal_views.my_attendance, name='student_my_attendance'),
     path('student/schedule/', student_portal_views.my_schedule, name='student_schedule'),
@@ -42,6 +43,7 @@ urlpatterns = [
     path('settings/branding/', academic_views.branding_settings_manage, name='branding_settings_manage'),
     path('imports/<str:kind>/', academic_views.bulk_import, name='bulk_import'),
     path('lectures/', attendance_views.lecturer_dashboard, name='lecturer_dashboard'),
+    path('lecturer/profile/', attendance_views.lecturer_profile, name='lecturer_profile'),
     path('lectures/history/', attendance_views.lecturer_history, name='lecturer_history'),
     path('attendance/schedule/<int:pk>/', attendance_views.mark_schedule, name='mark_schedule'),
     path('attendance/makeup/<int:pk>/', attendance_views.mark_makeup, name='mark_makeup'),
@@ -53,6 +55,7 @@ urlpatterns = [
     path('attendance/manage/new/', attendance_views.admin_new_session, name='admin_new_session'),
     path('attendance/log/', attendance_views.audit_log, name='audit_log'),
     path('fines/', fine_views.fines_dashboard, name='fines_dashboard'),
+    path('fines/student/<int:student_id>/', fine_views.fine_student_detail, name='fine_student_detail'),
     path('fines/challan/<int:student_id>/', fine_views.fine_challan, name='fine_challan'),
     path('reports/', report_views.reports, name='reports'),
     path('admin/', admin.site.urls),

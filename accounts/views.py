@@ -30,6 +30,8 @@ def dashboard(request):
     if request.user.is_superuser or request.user.role == 'ADMIN':
         from academics.views import admin_dashboard
         return admin_dashboard(request)
+    if request.user.role == 'ACCOUNTS':
+        return redirect('students_list')
     if request.user.role == 'LECTURER':
         from attendance.views import lecturer_dashboard
         return lecturer_dashboard(request)

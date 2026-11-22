@@ -1,16 +1,17 @@
 {% load static %}
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f6f8fc"><link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}?v=281"><title>{% block title %}{{ app_branding.app_name }}{% endblock %}</title>
+<meta name="theme-color" content="#f6f8fc"><link rel="icon" type="image/png" sizes="64x64" href="{% static 'pwa/favicon-64.png' %}?v=288"><title>{% block title %}{{ app_branding.app_name }}{% endblock %}</title>
 <link rel="stylesheet" href="{% static 'css/app.css' %}?v=281">
 <link rel="stylesheet" href="{% static 'css/sidebar_scroll_fix.css' %}?v=252">
 <link rel="stylesheet" href="{% static 'css/admin_usability.css' %}?v=281">
+<link rel="stylesheet" href="{% static 'css/profile_workload.css' %}?v=286">
 <script defer src="{% static 'js/app.js' %}?v=262"></script>
 <script defer src="{% static 'js/admin_usability.js' %}?v=263"></script>
 <!-- Clasvanta v2.8.3 PWA integration -->
 <link rel="manifest" href="{% url 'pwa_manifest' %}">
-<link rel="apple-touch-icon" sizes="180x180" href="{% static 'pwa/apple-touch-icon.png' %}">
-<link rel="icon" type="image/png" sizes="192x192" href="{% static 'pwa/icon-192.png' %}">
+<link rel="apple-touch-icon" sizes="180x180" href="{% static 'pwa/apple-touch-icon.png' %}?v=288">
+<link rel="icon" type="image/png" sizes="192x192" href="{% static 'pwa/icon-192.png' %}?v=288">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -44,7 +45,7 @@
      <a href="{% url 'student_add' %}">Add student</a>
      <a href="{% url 'bulk_import' 'students' %}">Import students</a>
    </div></details>
-   <a href="{% url 'admin_sessions' %}"><span class="nav-icon">☑</span> Attendance</a>
+   <a href="{% url 'admin_sessions' %}" class="{% if request.resolver_match.url_name == 'admin_sessions' %}active{% endif %}"><span class="nav-icon">☑</span> Daily class status</a>
    <a href="{% url 'makeup_classes' %}"><span class="nav-icon">＋</span> Make-up classes</a>
    <a href="{% url 'fines_dashboard' %}"><span class="nav-icon">¤</span> Fines</a>
    <a href="{% url 'audit_log' %}"><span class="nav-icon">◷</span> Activity log</a>
@@ -55,8 +56,16 @@
      {% if user.is_superuser %}<a href="{% url 'branding_settings_manage' %}">Application branding</a>{% endif %}
    </div></details>
    <a href="{% url 'admin:index' %}" class="subnav"><span class="nav-icon">⚙</span> Advanced administration</a>
+   {% elif user.role == 'ACCOUNTS' %}
+   <details class="nav-group" open><summary><span class="nav-icon">♙</span> Students <span class="nav-chev">⌄</span></summary><div class="nav-submenu">
+     <a href="{% url 'students_list' %}">Enrolled students</a>
+     <a href="{% url 'student_attendance' %}">Student attendance</a>
+     <a href="{% url 'student_add' %}">Add student</a>
+   </div></details>
+   <a href="{% url 'fines_dashboard' %}"><span class="nav-icon">¤</span> Fines</a>
    {% elif user.role == 'LECTURER' %}
    <a href="{% url 'lecturer_dashboard' %}"><span class="nav-icon">☑</span> Today's lectures</a>
+   <a href="{% url 'lecturer_profile' %}" class="{% if request.resolver_match.url_name == 'lecturer_profile' %}active{% endif %}"><span class="nav-icon">○</span> My Profile</a>
    <a href="{% url 'lecturer_history' %}"><span class="nav-icon">▤</span> My submissions</a>
    <a href="{% url 'makeup_classes' %}"><span class="nav-icon">＋</span> Make-up classes</a>
    <a href="{% url 'audit_log' %}"><span class="nav-icon">◷</span> Attendance audit log</a>

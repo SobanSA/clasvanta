@@ -1,7 +1,0 @@
-   {% elif user.role == 'ACCOUNTS' %}
-   <details class="nav-group" open><summary><span class="nav-icon">♙</span> Students <span class="nav-chev">⌄</span></summary><div class="nav-submenu">
-     <a href="{% url 'students_list' %}">Enrolled students</a>
-     <a href="{% url 'student_attendance' %}">Student attendance</a>
-     <a href="{% url 'student_add' %}">Add student</a>
-   </div></details>
-   <a href="{% url 'fines_dashboard' %}"><span class="nav-icon">¤</span> Fines</a>

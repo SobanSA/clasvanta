@@ -12,6 +12,7 @@ class AttendanceUserManager(UserManager):
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'ADMIN', 'Administrator'
+        ACCOUNTS = 'ACCOUNTS', 'Accounts'
         LECTURER = 'LECTURER', 'Lecturer'
         STUDENT = 'STUDENT', 'Student'
 

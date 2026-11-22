@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}My Profile | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}My Profile{% endblock %}
+{% block content %}
+<div class="page-heading student-page-heading">
+  <span class="eyebrow">LECTURER PORTAL</span>
+  <h1>My Profile</h1>
+  <p>Account details and regular weekly teaching workload for the active academic term.</p>
+</div>
+
+<div class="student-profile-layout">
+  <section class="panel student-profile-card">
+    <div class="student-profile-head">
+      <div class="student-profile-avatar">{{ user.username|slice:':1'|upper }}</div>
+      <div><small>Lecturer account</small><h2>{{ user.get_full_name|default:user.username }}</h2><span>{{ user.username }}</span></div>
+    </div>
+    <div class="student-profile-fields">
+      <div><span>Lecturer name</span><strong>{{ user.get_full_name|default:'—' }}</strong></div>
+      <div><span>Teacher ID</span><strong>{{ user.username }}</strong></div>
+      <div><span>Academic term</span><strong>{% if weekly.active_term %}{{ weekly.active_term.name }}{% else %}—{% endif %}</strong></div>
+      <div><span>Assigned subjects</span><strong>{{ weekly.summary.subject_count }}</strong></div>
+      <div><span>Subject sections</span><strong>{{ weekly.summary.section_count }}</strong></div>
+      <div><span>Linked classes</span><strong>{{ weekly.summary.class_count }}</strong></div>
+    </div>
+  </section>
+
+  <aside class="panel student-account-card">
+    <span class="eyebrow">ACCOUNT SECURITY</span>
+    <h2>Password</h2>
+    <p>You can change your login password. Teaching assignments and timetable changes remain administrator-controlled.</p>
+    <a class="btn btn-primary" href="{% url 'password_change' %}">Change password</a>
+  </aside>
+</div>
+
+<section class="profile-workload-section">
+  <div class="section-heading">
+    <div><h2>Weekly workload</h2><p>Regular recurring timetable only. One merged-section timetable slot counts as one teaching lecture.</p></div>
+  </div>
+  <div class="metric-grid workload-metrics">
+    <article class="metric-card"><span>Weekly lectures</span><strong>{{ weekly.summary.lecture_count }}</strong></article>
+    <article class="metric-card"><span>Teaching days</span><strong>{{ weekly.summary.teaching_days }}</strong></article>
+    <article class="metric-card"><span>Subjects</span><strong>{{ weekly.summary.subject_count }}</strong></article>
+    <article class="metric-card"><span>Merged sections</span><strong>{{ weekly.summary.merged_section_count }}</strong></article>
+  </div>
+
+  <div class="weekly-workload-grid">
+    {% for day in weekly.days %}
+    <article class="panel workload-day-card">
+      <div class="workload-day-head"><h3>{{ day.label }}</h3><span class="count-badge">{{ day.lectures|length }}</span></div>
+      <div class="workload-day-list">
+        {% for item in day.lectures %}
+        <div class="workload-lecture-row">
+          <span class="workload-lecture-no">L{{ item.lecture_number }}</span>
+          <div><strong>{{ item.subject.name }}</strong><small>{{ item.subject.code }} · {{ item.class_codes }}{% if item.merged %} · Merged ({{ item.class_count }} classes){% endif %}</small></div>
+        </div>
+        {% empty %}<div class="workload-empty">No regular lectures.</div>{% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,10 +1,13 @@
 import csv
+from calendar import monthrange
 from decimal import Decimal, InvalidOperation
 from datetime import date
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
+from attendance.models import SessionDeletionAudit
 from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -25,43 +28,77 @@ from .models import AcademicTerm, AppBranding, ClassGroup, ClassMembership, Clas
 def admin_dashboard(request):
     today = timezone.localdate()
     month_start = today.replace(day=1)
+    month_end = today.replace(day=monthrange(today.year, today.month)[1])
+    active = AcademicTerm.objects.filter(is_active=True).first()
 
-    # Regular timetable counts are based on recurring WeeklySchedule rows. A class
-    # only becomes "held" after attendance is explicitly submitted; pending or
-    # cancelled occurrences therefore do not inflate the held figure.
-    today_regular = WeeklySchedule.objects.filter(
-        weekday=today.weekday(),
-    ).filter(
-        Q(class_subject__class_groups__term__is_active=True) |
-        Q(class_subject__class_group__term__is_active=True, class_subject__class_groups__isnull=True)
-    ).distinct()
-    scheduled_keys = set(today_regular.values_list('class_subject_id', 'lecture_number'))
-    submitted_keys = set(LectureSession.objects.filter(
-        lecture_date=today, status='SUBMITTED',
-    ).values_list('class_subject_id', 'lecture_number'))
-    today_scheduled = len(scheduled_keys)
-    today_held = len(scheduled_keys & submitted_keys)
+    today_scheduled = 0
+    today_held = 0
+    makeup_today = 0
+    makeup_month = 0
+    makeup_month_start = None
+    makeup_month_end = None
 
-    active_makeup_scope = (
-        Q(class_subject__class_groups__term__is_active=True) |
-        Q(class_subject__class_group__term__is_active=True, class_subject__class_groups__isnull=True)
-    )
-    makeup_today = MakeupClass.objects.filter(
-        active_makeup_scope, lecture_date=today, status=MakeupClass.APPROVED,
-    ).distinct().count()
-    makeup_month = MakeupClass.objects.filter(
-        active_makeup_scope, lecture_date__range=(month_start, today), status=MakeupClass.APPROVED,
-    ).distinct().count()
+    if active:
+        term_scope = (
+            Q(class_subject__class_groups__term=active) |
+            Q(
+                class_subject__class_group__term=active,
+                class_subject__class_groups__isnull=True,
+            )
+        )
+
+        active_makeups = MakeupClass.objects.filter(
+            term_scope,
+            status=MakeupClass.APPROVED,
+        ).distinct()
+
+        # Full current month, constrained to the active term. This deliberately
+        # includes approved future make-ups later in the same calendar month.
+        makeup_month_start = max(month_start, active.start_date)
+        makeup_month_end = min(month_end, active.end_date)
+        if makeup_month_start <= makeup_month_end:
+            makeup_month = active_makeups.filter(
+                lecture_date__range=(makeup_month_start, makeup_month_end),
+            ).count()
+
+        if active.start_date <= today <= active.end_date:
+            today_regular = WeeklySchedule.objects.filter(
+                term_scope,
+                weekday=today.weekday(),
+            ).distinct()
+            regular_keys = set(
+                today_regular.values_list('class_subject_id', 'lecture_number')
+            )
+
+            today_makeups = active_makeups.filter(lecture_date=today)
+            makeup_keys = set(
+                today_makeups.values_list('class_subject_id', 'lecture_number')
+            )
+            makeup_today = len(makeup_keys)
+
+            # Match the detail screen: regular + approved make-up occurrences.
+            scheduled_keys = regular_keys | makeup_keys
+            held_keys = set(
+                LectureSession.objects.filter(
+                    lecture_date=today,
+                    status='SUBMITTED',
+                    class_subject_id__in={key[0] for key in scheduled_keys},
+                ).values_list('class_subject_id', 'lecture_number')
+            ) if scheduled_keys else set()
+            today_scheduled = len(scheduled_keys)
+            today_held = len(scheduled_keys & held_keys)
 
     context = {
         'student_count': StudentProfile.objects.count(),
         'lecturer_count': User.objects.filter(role='LECTURER', is_active=True).count(),
         'class_count': ClassGroup.objects.filter(term__is_active=True).count(),
-        'today_sessions': LectureSession.objects.filter(lecture_date=today, status='SUBMITTED').count(),
+        'today_sessions': today_held,
         'today_scheduled': today_scheduled,
         'today_held': today_held,
         'makeup_today': makeup_today,
         'makeup_month': makeup_month,
+        'makeup_month_start': makeup_month_start,
+        'makeup_month_end': makeup_month_end,
         'month_start': month_start,
         'recent_sessions': LectureSession.objects.select_related(
             'class_subject__class_group', 'class_subject__subject', 'class_subject__lecturer', 'submitted_by'
@@ -424,7 +461,7 @@ def bulk_import(request, kind):
     })
 
 
-@role_required('ADMIN')
+@role_required('ADMIN','ACCOUNTS')
 def students_list(request):
     active = AcademicTerm.objects.filter(is_active=True).first()
     programmes = Programme.objects.all().order_by('code')
@@ -479,6 +516,221 @@ def students_list(request):
 
 
 @role_required('ADMIN')
+@require_http_methods(['GET', 'POST'])
+def student_delete(request, student_id):
+    """Manage student status, safe deletion, and explicitly confirmed force deletion."""
+    student = get_object_or_404(
+        StudentProfile.objects.select_related('user'), pk=student_id,
+    )
+
+    def snapshot_entry_matches(entry, *, profile_id, registration):
+        if not isinstance(entry, dict):
+            return False
+        entry_student_id = entry.get('student_id')
+        entry_registration = str(entry.get('registration_number') or '').strip()
+        return (
+            str(entry_student_id) == str(profile_id)
+            or (entry_registration and entry_registration.casefold() == registration.casefold())
+        )
+
+    def snapshot_entry_count(profile_id, registration):
+        count = 0
+        for deletion in SessionDeletionAudit.objects.only('snapshot'):
+            snapshot = deletion.snapshot or {}
+            count += sum(
+                snapshot_entry_matches(item, profile_id=profile_id, registration=registration)
+                for item in (snapshot.get('records') or [])
+            )
+            count += sum(
+                snapshot_entry_matches(item, profile_id=profile_id, registration=registration)
+                for item in (snapshot.get('attendance_audits') or [])
+            )
+        return count
+
+    memberships = list(
+        ClassMembership.objects.filter(student=student)
+        .select_related('term', 'class_group__programme')
+        .order_by('-term__start_date', '-pk')
+    )
+    attendance_count = AttendanceRecord.objects.filter(student=student).count()
+    audit_count = AttendanceAudit.objects.filter(student=student).count()
+    fine_entry_count = FineLedgerEntry.objects.filter(student=student).count()
+    snapshot_count = snapshot_entry_count(student.pk, student.user.username)
+    can_delete = (attendance_count + audit_count + fine_entry_count + snapshot_count) == 0
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'safe_delete')
+        return_to_list = request.POST.get('return_to') == 'list'
+
+        if action == 'toggle_active':
+            with transaction.atomic():
+                locked = StudentProfile.objects.select_for_update().select_related('user').get(pk=student.pk)
+                user = User.objects.select_for_update().get(pk=locked.user_id)
+                user.is_active = not user.is_active
+                user.save(update_fields=['is_active'])
+                new_status = 'active' if user.is_active else 'inactive'
+            messages.success(request, f'Student {user.username} is now {new_status}.')
+            return redirect('students_list' if return_to_list else 'student_delete', **({} if return_to_list else {'student_id': student.pk}))
+
+        confirmation = request.POST.get('confirm_registration', '').strip()
+        if confirmation.casefold() != student.user.username.casefold():
+            messages.error(request, 'Type the exact registration number to confirm this deletion.')
+            return redirect('student_delete', student_id=student.pk)
+
+        if action == 'safe_delete':
+            if not can_delete:
+                messages.error(
+                    request,
+                    'Safe deletion is blocked because this student has historical records. '
+                    'Use Force Delete only if you intentionally want to erase that history.',
+                )
+                return redirect('student_delete', student_id=student.pk)
+            try:
+                with transaction.atomic():
+                    locked = StudentProfile.objects.select_for_update().select_related('user').get(pk=student.pk)
+                    user = User.objects.select_for_update().get(pk=locked.user_id)
+                    if (
+                        AttendanceRecord.objects.filter(student=locked).exists()
+                        or AttendanceAudit.objects.filter(student=locked).exists()
+                        or FineLedgerEntry.objects.filter(student=locked).exists()
+                        or snapshot_entry_count(locked.pk, user.username)
+                    ):
+                        raise ValidationError(
+                            'Historical records were found while deleting. The student was not deleted.'
+                        )
+                    registration = user.username
+                    ClassMembership.objects.filter(student=locked).delete()
+                    locked.delete()
+                    user.delete()
+                messages.success(request, f'Student {registration} permanently deleted.')
+                return redirect('students_list')
+            except (ValidationError, ProtectedError) as exc:
+                messages.error(request, f'Could not delete student: {exc}')
+                return redirect('student_delete', student_id=student.pk)
+
+        if action == 'force_delete':
+            phrase = request.POST.get('confirm_phrase', '').strip()
+            if phrase != 'FORCE DELETE':
+                messages.error(request, 'Type FORCE DELETE exactly to confirm complete history removal.')
+                return redirect('student_delete', student_id=student.pk)
+
+            try:
+                with transaction.atomic():
+                    locked = StudentProfile.objects.select_for_update().select_related('user').get(pk=student.pk)
+                    user = User.objects.select_for_update().get(pk=locked.user_id)
+                    registration = user.username
+
+                    # AttendanceAudit PROTECTs AttendanceRecord, so audit rows must go first.
+                    deleted_audits = AttendanceAudit.objects.filter(student=locked).delete()[0]
+                    deleted_records = AttendanceRecord.objects.filter(student=locked).delete()[0]
+                    deleted_fines = FineLedgerEntry.objects.filter(student=locked).delete()[0]
+
+                    # Scrub this student's identity and mark-level history from any
+                    # previously saved deleted-session snapshots without deleting
+                    # the snapshot/history belonging to other students.
+                    scrubbed_snapshot_entries = 0
+                    for deletion in SessionDeletionAudit.objects.select_for_update().all():
+                        snapshot = dict(deletion.snapshot or {})
+                        records = list(snapshot.get('records') or [])
+                        audit_rows = list(snapshot.get('attendance_audits') or [])
+                        new_records = [
+                            item for item in records
+                            if not snapshot_entry_matches(
+                                item, profile_id=locked.pk, registration=registration,
+                            )
+                        ]
+                        new_audit_rows = [
+                            item for item in audit_rows
+                            if not snapshot_entry_matches(
+                                item, profile_id=locked.pk, registration=registration,
+                            )
+                        ]
+                        removed = (len(records) - len(new_records)) + (len(audit_rows) - len(new_audit_rows))
+                        if removed:
+                            scrubbed_snapshot_entries += removed
+                            snapshot['records'] = new_records
+                            snapshot['attendance_audits'] = new_audit_rows
+                            deletion.snapshot = snapshot
+                            deletion.record_count = len(new_records)
+                            deletion.present_count = sum(item.get('status') == AttendanceRecord.PRESENT for item in new_records)
+                            deletion.absent_count = sum(item.get('status') == AttendanceRecord.ABSENT for item in new_records)
+                            deletion.save(update_fields=[
+                                'snapshot', 'record_count', 'present_count', 'absent_count',
+                            ])
+
+                    deleted_memberships = ClassMembership.objects.filter(student=locked).delete()[0]
+                    locked.delete()
+                    user.delete()
+
+                messages.success(
+                    request,
+                    f'Force deleted student {registration}: '
+                    f'{deleted_records} attendance record(s), {deleted_audits} attendance audit row(s), '
+                    f'{deleted_fines} fine ledger entry/entries, {deleted_memberships} enrollment record(s), '
+                    f'and {scrubbed_snapshot_entries} deleted-session snapshot entry/entries removed.',
+                )
+                return redirect('students_list')
+            except (ValidationError, ProtectedError) as exc:
+                messages.error(request, f'Force delete failed and was rolled back: {exc}')
+                return redirect('student_delete', student_id=student.pk)
+
+        messages.error(request, 'Unknown student-management action.')
+        return redirect('student_delete', student_id=student.pk)
+
+    return render(request, 'academics/student_delete.html', {
+        'student': student,
+        'memberships': memberships,
+        'membership_count': len(memberships),
+        'attendance_count': attendance_count,
+        'audit_count': audit_count,
+        'fine_entry_count': fine_entry_count,
+        'snapshot_count': snapshot_count,
+        'can_delete': can_delete,
+    })
+
+@role_required('ADMIN','ACCOUNTS')
+@require_http_methods(['GET', 'POST'])
+def student_edit(request, student_id):
+    """Edit student identity details without altering enrollment or history."""
+    student = get_object_or_404(
+        StudentProfile.objects.select_related('user'),
+        pk=student_id,
+    )
+
+    if request.method == 'POST':
+        try:
+            registration = request.POST['registration_number'].strip().upper()
+            student_name = request.POST['student_name'].strip()
+            father_name = request.POST.get('father_name', '').strip()
+
+            if not registration or not student_name:
+                raise ValueError('Registration number and student name are required.')
+            if User.objects.filter(username__iexact=registration).exclude(pk=student.user_id).exists():
+                raise ValueError(f'{registration} already belongs to another account.')
+
+            with transaction.atomic():
+                locked = StudentProfile.objects.select_for_update().select_related('user').get(pk=student.pk)
+                user = User.objects.select_for_update().get(pk=locked.user_id)
+                user.username = registration
+                user.first_name = student_name
+                user.last_name = ''
+                user.full_clean()
+                user.save(update_fields=['username', 'first_name', 'last_name'])
+
+                locked.father_name = father_name
+                locked.full_clean()
+                locked.save(update_fields=['father_name'])
+
+            messages.success(request, 'Student details updated.')
+            return redirect('students_list')
+        except (ValueError, KeyError, ValidationError, IntegrityError, StudentProfile.DoesNotExist) as exc:
+            messages.error(request, f'Could not update student: {exc}')
+
+    return render(request, 'academics/student_edit.html', {
+        'student': student,
+    })
+
+@role_required('ADMIN','ACCOUNTS')
 def student_attendance(request):
     """Admin lookup: assigned subjects first, then expandable held-class history."""
     active = AcademicTerm.objects.filter(is_active=True).first()
@@ -553,7 +805,7 @@ def student_attendance(request):
     })
 
 
-@role_required('ADMIN')
+@role_required('ADMIN','ACCOUNTS')
 @require_http_methods(['GET','POST'])
 def student_add(request):
     active = AcademicTerm.objects.filter(is_active=True).first()
@@ -566,6 +818,7 @@ def student_add(request):
                 raise ValueError('Create or activate an academic term first.')
             reg = request.POST['registration_number'].strip().upper()
             name = request.POST['student_name'].strip()
+            father_name = request.POST.get('father_name', '').strip()
             group = ClassGroup.objects.get(pk=int(request.POST['class_group']), term=active)
             if not reg or not name:
                 raise ValueError('Registration number and student name are required.')
@@ -576,12 +829,13 @@ def student_add(request):
                 user = User(username=reg, first_name=name, role='STUDENT', must_change_password=True)
                 user.set_password(password)
                 user.full_clean(); user.save()
-                profile = StudentProfile.objects.create(user=user)
+                profile = StudentProfile.objects.create(user=user, father_name=father_name)
                 membership = ClassMembership(student=profile, term=active, class_group=group)
                 membership.full_clean(); membership.save()
             request.session['new_student'] = {
                 'registration_number': reg,
                 'student_name': name,
+                'father_name': father_name,
                 'class_code': group.code,
                 'password': password,
             }
@@ -768,8 +1022,38 @@ def lecture_schedule_manage(request):
             action=request.POST.get('action','add')
             if action == 'add':
                 offering=ClassSubject.objects.filter(pk=int(request.POST['offering']), class_groups__term=active).distinct().get()
-                obj=WeeklySchedule(class_subject=offering, weekday=int(request.POST['weekday']), lecture_number=int(request.POST['lecture_number']))
-                obj.full_clean(); obj.save(); messages.success(request,'Lecture assignment added.')
+                raw_weekdays=request.POST.getlist('weekdays')
+                if not raw_weekdays and request.POST.get('weekday'):
+                    # Backward compatibility for an older cached single-day form.
+                    raw_weekdays=[request.POST['weekday']]
+                if not raw_weekdays:
+                    raise ValueError('Select at least one lecture day.')
+
+                valid_days={value for value, _label in WeeklySchedule.DAYS}
+                weekdays=[]
+                for raw_day in raw_weekdays:
+                    day=int(raw_day)
+                    if day not in valid_days:
+                        raise ValueError('Invalid lecture day.')
+                    if day not in weekdays:
+                        weekdays.append(day)
+
+                lecture_number=int(request.POST['lecture_number'])
+                with transaction.atomic():
+                    for weekday in weekdays:
+                        obj=WeeklySchedule(
+                            class_subject=offering,
+                            weekday=weekday,
+                            lecture_number=lecture_number,
+                        )
+                        obj.full_clean()
+                        obj.save()
+
+                count=len(weekdays)
+                messages.success(
+                    request,
+                    f'{count} lecture assignment{"s" if count != 1 else ""} added.'
+                )
             elif action == 'edit':
                 obj=WeeklySchedule.objects.filter(pk=int(request.POST['id']), class_subject__class_groups__term=active).distinct().get()
                 obj.weekday=int(request.POST['weekday']); obj.lecture_number=int(request.POST['lecture_number'])

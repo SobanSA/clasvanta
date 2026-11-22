@@ -13,10 +13,17 @@ class FinePolicy(models.Model):
 
 
 class FineLedgerEntry(models.Model):
-    KINDS = [('CHARGE', 'Fine charge'), ('ADJUSTMENT', 'Fine adjustment'), ('PAYMENT', 'Payment')]
+    KINDS = [
+        ('CHARGE', 'Fine charge'),
+        ('ADJUSTMENT', 'Fine adjustment'),
+        ('PAYMENT', 'Payment'),
+        ('CONCESSION', 'Concession'),
+        ('WAIVER', 'Waiver'),
+        ('RELIEF_REVERSAL', 'Relief reversal'),
+    ]
     student = models.ForeignKey('academics.StudentProfile', on_delete=models.PROTECT, related_name='fine_entries')
     class_subject = models.ForeignKey('academics.ClassSubject', on_delete=models.PROTECT, related_name='fine_entries')
-    kind = models.CharField(max_length=12, choices=KINDS)
+    kind = models.CharField(max_length=18, choices=KINDS)
     # Positive: charge, negative: reversal or payment.
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     note = models.CharField(max_length=300, blank=True)

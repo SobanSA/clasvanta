@@ -3,7 +3,7 @@
 {% block title %}Lecture assignments | {{ app_branding.app_name }}{% endblock %}
 {% block crumb %}Academic setup / Lecture assignments{% endblock %}
 {% block head %}
-<link rel="stylesheet" href="{% static 'css/lecture_picker.css' %}?v=254">
+<link rel="stylesheet" href="{% static 'css/lecture_picker.css' %}?v=286">
 <script defer src="{% static 'js/lecture_picker.js' %}?v=253"></script>
 {% endblock %}
 {% block content %}
@@ -61,7 +61,15 @@
   </div>
   <small class="course-picker-help">Choose by full course name, not codes.</small>
  </div>
- <div class="lecture-slot-field"><label for="lecture-slot-weekday">Day</label><select id="lecture-slot-weekday" name="weekday" required>{% for value,label in days %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+ <div class="lecture-slot-field lecture-day-field">
+   <span class="lecture-slot-label">Days</span>
+   <div class="lecture-day-options" role="group" aria-label="Lecture days">
+     {% for value,label in days %}
+     <label class="lecture-day-check"><input type="checkbox" name="weekdays" value="{{ value }}" {% if forloop.first %}checked{% endif %}><span>{{ label }}</span></label>
+     {% endfor %}
+   </div>
+   <small class="course-picker-help">Select one or more days for the same lecture number.</small>
+ </div>
  <div class="lecture-slot-field"><label for="lecture-slot-number">Lecture number</label><input id="lecture-slot-number" type="number" min="1" max="20" name="lecture_number" value="1" required></div>
  </div><button class="btn btn-primary" {% if not active_term %}disabled{% endif %}>Add lecture assignment</button></form></section>
 <section class="panel lecture-results-panel" data-course-list>
@@ -71,13 +79,13 @@
   <div class="lecture-list-tools" data-course-list-tools hidden>
     <label for="verification-course-search">Find a course or teacher</label>
     <div class="lecture-list-search-line">
-      <input id="verification-course-search" type="search" data-course-list-search placeholder="Search course name, code, class, teacher name or ID…" autocomplete="off">
+      <input id="verification-course-search" type="search" data-course-list-search placeholder="Search course, class, teacher, ID, day or lecture…" autocomplete="off">
       <span class="lecture-list-count" data-course-list-count role="status" aria-live="polite"></span>
     </div>
   </div>
   <div class="course-list-card-list" data-course-list-items>
     {% for o in offerings %}
-    <article class="course-list-card" data-course-list-item data-search="{{ o.subject.name }} {{ o.subject.code }} {{ o.section_code }} {{ o.class_codes_display }} {% if o.lecturer %}{{ o.lecturer.get_full_name }} {{ o.lecturer.username }}{% endif %} {% if o.is_ready %}ready{% else %}needs setup{% endif %}">
+    <article class="course-list-card" data-course-list-item data-search="{{ o.subject.name }} {{ o.subject.code }} {{ o.section_code }} {{ o.class_codes_display }} {% if o.lecturer %}{{ o.lecturer.get_full_name }} {{ o.lecturer.username }}{% endif %} {% for slot in o.display_schedules %}{{ slot.get_weekday_display }} Lecture {{ slot.lecture_number }} L{{ slot.lecture_number }} {% endfor %}{% if o.is_ready %}ready{% else %}needs setup{% endif %}">
       <div class="course-list-card-main">
         <div class="course-list-card-title-row">
           <h3 class="course-list-card-title">{{ o.subject.name }}</h3>
@@ -92,7 +100,44 @@
         {% if o.class_count > 1 %}<span class="course-picker-merged">Merged section · {{ o.class_count }} classes</span>{% endif %}
       </div>
       <div class="course-list-card-aside">
-        <span class="course-list-card-label">Assigned lectures</span>
+        <div class="course-list-card-label-row">
+          <span class="course-list-card-label">Assigned lectures</span>
+          {% if o.display_schedules %}
+          <details class="lecture-inline-editor">
+            <summary>Edit</summary>
+            <div class="lecture-inline-editor-body">
+              {% for slot in o.display_schedules %}
+              <div class="lecture-inline-row">
+                <form method="post" class="lecture-inline-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="edit">
+                  <input type="hidden" name="id" value="{{ slot.pk }}">
+                  <div class="lecture-edit-field">
+                    <label for="inline-weekday-{{ slot.pk }}">Day</label>
+                    <select id="inline-weekday-{{ slot.pk }}" name="weekday">
+                      {% for value,label in days %}
+                      <option value="{{ value }}" {% if slot.weekday == value %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="lecture-edit-field lecture-inline-number">
+                    <label for="inline-number-{{ slot.pk }}">Lecture</label>
+                    <input id="inline-number-{{ slot.pk }}" type="number" min="1" max="20" name="lecture_number" value="{{ slot.lecture_number }}" required>
+                  </div>
+                  <button type="submit" class="btn btn-small">Save</button>
+                </form>
+                <form method="post" class="lecture-inline-remove">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="id" value="{{ slot.pk }}">
+                  <button class="btn btn-small btn-danger" type="submit" data-confirm="Remove this lecture assignment? Past attendance records will be preserved.">Remove</button>
+                </form>
+              </div>
+              {% endfor %}
+            </div>
+          </details>
+          {% endif %}
+        </div>
         <div class="lecture-pill-group">{% for slot in o.display_schedules %}<span class="schedule-pill">{{ slot.get_weekday_display }} · Lecture {{ slot.lecture_number }}</span>{% empty %}<span class="warning-text">No lectures</span>{% endfor %}</div>
         {% if not o.is_ready %}<p class="course-list-card-warning">{% if o.missing_teacher %}Assign a teacher. {% endif %}{% if o.inactive_teacher %}Teacher inactive. {% endif %}{% if o.missing_schedule %}Assign a lecture number. {% endif %}{% if o.has_conflict %}Resolve timetable clash.{% endif %}</p>{% endif %}
       </div>
@@ -102,49 +147,4 @@
   <p class="course-list-card-empty" data-course-list-empty hidden>No matching courses. Try another course or teacher name.</p>
 </section>
 {% if conflicts %}<section class="panel"><div class="panel-head"><h2 class="danger-text">Existing timetable conflicts ({{ conflicts|length }})</h2></div><div class="table-scroller"><table class="data-table"><thead><tr><th>Slot</th><th>First section</th><th>Second section</th><th>Issue</th></tr></thead><tbody>{% for item in conflicts %}<tr><td>{{ item.first.get_weekday_display }} · L{{ item.first.lecture_number }}</td><td>{{ item.first.class_subject.subject.code }} · {{ item.first.class_subject.class_codes_display }}</td><td>{{ item.second.class_subject.subject.code }} · {{ item.second.class_subject.class_codes_display }}</td><td><span class="warning-text">{{ item.reason }}</span></td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
-<section class="panel lecture-results-panel" data-course-list>
-  <div class="panel-head lecture-list-head">
-    <div><h2>Weekly lecture slots</h2><p class="help-text">Edit the day or lecture number below. Clash validation and historical attendance preservation are unchanged.</p></div>
-  </div>
-  <div class="lecture-list-tools" data-course-list-tools hidden>
-    <label for="weekly-course-search">Find an assigned lecture</label>
-    <div class="lecture-list-search-line">
-      <input id="weekly-course-search" type="search" data-course-list-search placeholder="Search course, teacher, teacher ID, day or lecture…" autocomplete="off">
-      <span class="lecture-list-count" data-course-list-count role="status" aria-live="polite"></span>
-    </div>
-  </div>
-  <div class="course-list-card-list" data-course-list-items>
-    {% for s in schedules %}
-    <article class="course-list-card course-list-card--editable" data-course-list-item data-search="{{ s.class_subject.subject.name }} {{ s.class_subject.subject.code }} {{ s.class_subject.class_codes_display }} {% if s.class_subject.lecturer %}{{ s.class_subject.lecturer.get_full_name }} {{ s.class_subject.lecturer.username }}{% endif %} {{ s.get_weekday_display }} Lecture {{ s.lecture_number }} L{{ s.lecture_number }}">
-      <div class="course-list-card-main">
-        <h3 class="course-list-card-title">{{ s.class_subject.subject.name }}</h3>
-        <p class="course-list-card-meta"><strong>Course:</strong> {{ s.class_subject.subject.code }} <span aria-hidden="true">·</span> <strong>Class:</strong> {{ s.class_subject.class_codes_display }}</p>
-        <p class="course-list-card-meta"><strong>Teacher:</strong>
-          {% if s.class_subject.lecturer %}{% if s.class_subject.lecturer.get_full_name %}{{ s.class_subject.lecturer.get_full_name }}{% else %}Name not entered{% endif %}
-          <span aria-hidden="true">·</span> <strong>Teacher ID:</strong> {{ s.class_subject.lecturer.username }}
-          {% else %}<span class="warning-text">Not assigned</span>{% endif %}
-        </p>
-        {% if s.class_subject.class_count > 1 %}<span class="course-picker-merged">Merged section · {{ s.class_subject.class_count }} classes</span>{% endif %}
-      </div>
-      <div class="course-list-card-aside">
-        <form id="w{{ s.pk }}" method="post" class="course-list-card-edit-form">
-          {% csrf_token %}<input type="hidden" name="action" value="edit"><input type="hidden" name="id" value="{{ s.pk }}">
-          <div class="lecture-edit-row">
-            <div class="lecture-edit-field"><label for="weekday-{{ s.pk }}">Day</label><select id="weekday-{{ s.pk }}" name="weekday">{% for value,label in days %}<option value="{{ value }}" {% if s.weekday == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-            <div class="lecture-edit-field"><label for="number-{{ s.pk }}">Lecture</label><input id="number-{{ s.pk }}" type="number" min="1" max="20" name="lecture_number" value="{{ s.lecture_number }}" required></div>
-          </div>
-        </form>
-        <div class="lecture-edit-actions">
-          <button type="submit" class="btn btn-small" form="w{{ s.pk }}">Save changes</button>
-          <form method="post" class="course-list-card-delete-form">
-            {% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ s.pk }}">
-            <button class="btn btn-small btn-danger" type="submit" data-confirm="Remove this lecture assignment? Past attendance records will be preserved.">Remove</button>
-          </form>
-        </div>
-      </div>
-    </article>
-    {% empty %}<p class="course-list-card-empty">No lecture slots assigned yet.</p>{% endfor %}
-  </div>
-  <p class="course-list-card-empty" data-course-list-empty hidden>No assigned lectures match your search.</p>
-</section>
 {% endblock %}

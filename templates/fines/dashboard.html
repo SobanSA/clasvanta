@@ -1,5 +1,47 @@
-{% extends 'base.html' %}{% block title %}Fine ledger | {{ app_branding.app_name }}{% endblock %}{% block crumb %}Fines{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Fine ledger | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Fines{% endblock %}
 {% block content %}
-<div class="page-heading"><span class="eyebrow">FINANCIAL RECORDS</span><h1>Outstanding fines</h1><p>Automatic subject-wise fines, manual payments and preserved adjustment history.</p></div>
-<section class="panel"><div class="panel-head"><h2>Student balances</h2><span class="status-pill pending">{{ balances|length }} outstanding entries</span></div><div class="table-scroller"><table class="data-table"><thead><tr><th>Registration ID</th><th>Student</th><th>Class / Subject</th><th>Outstanding</th><th>Payment</th><th>Challan</th></tr></thead><tbody>{% for row in balances %}<tr><td>{{ row.student__user__username }}</td><td>{{ row.student_name }}</td><td>{{ row.class_codes }} · {{ row.class_subject__subject__short_name }}</td><td><strong>Rs {{ row.balance|floatformat:2 }}</strong></td><td><form method="post" class="payment-form">{% csrf_token %}<input type="hidden" name="student" value="{{ row.student_id }}"><input type="hidden" name="offering" value="{{ row.class_subject_id }}"><input type="number" name="amount" min="0.01" max="{{ row.balance }}" step="0.01" placeholder="Amount" aria-label="Payment amount" required><input type="text" name="reference" placeholder="Reference" aria-label="Payment reference"><button class="btn btn-primary" type="submit">Record</button></form></td><td><a class="btn btn-secondary" href="{% url 'fine_challan' row.student_id %}" target="_blank" rel="noopener">Print challan</a></td></tr>{% empty %}<tr><td colspan="6" class="empty-cell">No outstanding fines.</td></tr>{% endfor %}</tbody></table></div></section>
+<div class="page-heading">
+  <span class="eyebrow">FINANCIAL RECORDS</span>
+  <h1>Outstanding fines</h1>
+  <p>Search student balances, open the complete ledger and print payment challans.</p>
+</div>
+{% if accounts_read_only %}
+<div class="alert alert-success"><strong>Accounts access:</strong> This screen is read-only. You can view fine history and print challans, but you cannot record payments, concessions or waivers.</div>
+{% endif %}
+<section class="panel structure-filter-panel">
+  <div class="student-roster-filters">
+    <div class="roster-filter-field student-live-search">
+      <label for="fineStudentSearch">Search student</label>
+      <input id="fineStudentSearch" type="search" placeholder="Registration number, student or father name…" autocomplete="off" data-roster-search>
+      <small>Searches registration number, student name, father name, class or subject.</small>
+    </div>
+  </div>
+</section>
+<section class="panel">
+  <div class="panel-head"><h2>Student balances</h2><span class="status-pill pending"><span data-roster-visible-count>{{ balances|length }}</span> outstanding entries</span></div>
+  <div class="table-scroller">
+    <table class="data-table">
+      <thead><tr><th>Registration ID</th><th>Student</th><th>Class / Subject</th><th>Outstanding</th>{% if not accounts_read_only %}<th>Payment</th>{% endif %}<th>Actions</th></tr></thead>
+      <tbody data-roster-body>
+      {% for row in balances %}
+      <tr data-roster-row data-search="{{ row.student__user__username }} {{ row.student_name }} {{ row.student__father_name }} {{ row.class_codes }} {{ row.class_subject__subject__short_name }}">
+        <td><strong>{{ row.student__user__username }}</strong></td>
+        <td>{{ row.student_name }}{% if row.student__father_name %}<small>Father: {{ row.student__father_name }}</small>{% endif %}</td>
+        <td>{{ row.class_codes }} · {{ row.class_subject__subject__short_name }}</td>
+        <td><strong>Rs {{ row.balance|floatformat:2 }}</strong></td>
+        {% if not accounts_read_only %}
+        <td><form method="post" class="payment-form">{% csrf_token %}<input type="hidden" name="student" value="{{ row.student_id }}"><input type="hidden" name="offering" value="{{ row.class_subject_id }}"><input type="number" name="amount" min="0.01" max="{{ row.balance }}" step="0.01" placeholder="Amount" aria-label="Payment amount" required><input type="text" name="reference" placeholder="Reference" aria-label="Payment reference"><button class="btn btn-primary" type="submit">Record</button></form></td>
+        {% endif %}
+        <td><div class="row-actions"><a class="btn btn-small btn-secondary" href="{% url 'fine_student_detail' row.student_id %}">View ledger</a><a class="btn btn-small btn-secondary" href="{% url 'fine_challan' row.student_id %}" target="_blank" rel="noopener">Print challan</a></div></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="{% if accounts_read_only %}5{% else %}6{% endif %}" class="empty-cell">No outstanding fines.</td></tr>
+      {% endfor %}
+      <tr data-roster-empty hidden><td colspan="{% if accounts_read_only %}5{% else %}6{% endif %}" class="empty-cell">No fine entries match this search.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}

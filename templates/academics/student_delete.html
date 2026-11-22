@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Manage student | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Students / Manage student{% endblock %}
+{% block head %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/student_management.css' %}?v=289">{% endblock %}
+{% block content %}
+<div class="page-heading student-management-heading">
+  <a class="back-link" href="{% url 'students_list' %}">&larr; Back to enrolled students</a>
+  <span class="eyebrow">STUDENT MANAGEMENT</span>
+  <h1>Manage student</h1>
+  <p>Change account status, safely remove an unused student, or explicitly erase all student-specific history.</p>
+</div>
+
+<section class="panel student-manage-card">
+  <div class="panel-head"><div><h2>{{ student.user.get_full_name|default:student.user.username }}</h2><p class="help-text">Registration: {{ student.user.username }}</p></div><div class="student-manage-statuses">{% if student.user.is_active %}<span class="status-pill done">Active</span>{% else %}<span class="status-pill">Inactive</span>{% endif %}{% if can_delete %}<span class="status-pill done">Safe to delete</span>{% else %}<span class="status-pill absent-pill">Protected history</span>{% endif %}</div></div>
+  <div class="student-manage-body">
+    <div class="student-manage-grid">
+      <div class="student-manage-stat"><span>Registration number</span><strong>{{ student.user.username }}</strong></div>
+      <div class="student-manage-stat"><span>Enrollment records</span><strong>{{ membership_count }}</strong></div>
+      <div class="student-manage-stat"><span>Attendance records</span><strong>{{ attendance_count }}</strong></div>
+      <div class="student-manage-stat"><span>Attendance audit entries</span><strong>{{ audit_count }}</strong></div>
+      <div class="student-manage-stat"><span>Fine ledger entries</span><strong>{{ fine_entry_count }}</strong></div>
+      <div class="student-manage-stat"><span>Deleted-session snapshot entries</span><strong>{{ snapshot_count }}</strong></div>
+    </div>
+    <div class="student-manage-account-action">
+      <div><strong>Account access</strong><p>{% if student.user.is_active %}The student can currently sign in. Deactivation keeps all records but blocks login.{% else %}The account is inactive. All academic records remain stored.{% endif %}</p></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_active"><button class="btn {% if student.user.is_active %}btn-danger-soft{% else %}btn-primary{% endif %}" type="submit">{% if student.user.is_active %}Set student inactive{% else %}Activate student{% endif %}</button></form>
+    </div>
+  </div>
+</section>
+
+{% if memberships %}
+<section class="panel student-manage-card">
+  <div class="panel-head"><div><h2>Enrollment history</h2><p class="help-text">These memberships are retained while the student exists.</p></div></div>
+  <div class="table-scroller"><table class="data-table"><thead><tr><th>Term</th><th>Programme</th><th>Class</th></tr></thead><tbody>
+  {% for membership in memberships %}<tr><td>{{ membership.term.name }}</td><td>{{ membership.class_group.programme.code }}</td><td><strong>{{ membership.class_group.code }}</strong><small>{{ membership.class_group.name }}</small></td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endif %}
+
+{% if can_delete %}
+<section class="panel student-manage-card student-safe-delete-panel">
+  <div class="panel-head"><div><h2>Permanent deletion</h2><p class="help-text">No attendance, audit, fine, or deleted-session snapshot history was found for this student.</p></div><span class="status-pill done">Safe delete</span></div>
+  <div class="student-manage-body">
+    <div class="student-delete-warning"><strong>This action cannot be undone.</strong><span>The student login, profile and all enrollment records will be permanently removed.</span></div>
+    <form method="post" class="student-delete-form">{% csrf_token %}<input type="hidden" name="action" value="safe_delete"><div class="form-field"><label for="confirmRegistration">Type registration number <strong>{{ student.user.username }}</strong> to confirm</label><input id="confirmRegistration" name="confirm_registration" autocomplete="off" required></div><div class="hero-actions"><button class="btn btn-danger" type="submit">Permanently delete student</button><a class="btn btn-secondary" href="{% url 'students_list' %}">Cancel</a></div></form>
+  </div>
+</section>
+{% else %}
+<section class="panel student-manage-card student-protected-panel">
+  <div class="panel-head"><div><h2>Safe deletion blocked</h2><p class="help-text">Historical student data exists, so normal deletion remains protected.</p></div><span class="status-pill absent-pill">{{ attendance_count|add:audit_count|add:fine_entry_count|add:snapshot_count }} protected item{{ attendance_count|add:audit_count|add:fine_entry_count|add:snapshot_count|pluralize }}</span></div>
+  <div class="student-manage-body"><p class="student-manage-copy">You can keep the student inactive and preserve history, or use Force Delete below if the records were created in error and must be completely removed.</p></div>
+</section>
+
+<section class="panel student-manage-card student-force-delete-panel">
+  <div class="panel-head"><div><span class="eyebrow">DESTRUCTIVE ACTION</span><h2>Force delete student and all records</h2><p class="help-text">This deliberately overrides the normal historical-record protection.</p></div></div>
+  <div class="student-manage-body">
+    <div class="student-force-delete-summary"><strong>This will permanently erase:</strong><ul><li>{{ attendance_count }} attendance record{{ attendance_count|pluralize }}</li><li>{{ audit_count }} student-level attendance audit entr{{ audit_count|pluralize:"y,ies" }}</li><li>{{ fine_entry_count }} fine ledger entr{{ fine_entry_count|pluralize:"y,ies" }}</li><li>{{ membership_count }} enrollment record{{ membership_count|pluralize }}</li><li>{{ snapshot_count }} deleted-session snapshot entr{{ snapshot_count|pluralize:"y,ies" }}</li><li>the student profile and login account</li></ul><p>Lecture sessions and records belonging to other students are not deleted. <strong>Take a database backup before using Force Delete if there is any chance you may need this student data later.</strong></p></div>
+    <form method="post" class="student-delete-form" onsubmit="return confirm('FORCE DELETE will permanently erase this student and their student-specific history. Continue?');">{% csrf_token %}<input type="hidden" name="action" value="force_delete"><div class="student-delete-confirm-grid"><div class="form-field"><label for="forceRegistration">Type registration number <strong>{{ student.user.username }}</strong></label><input id="forceRegistration" name="confirm_registration" autocomplete="off" required></div><div class="form-field"><label for="forcePhrase">Type <strong>FORCE DELETE</strong></label><input id="forcePhrase" name="confirm_phrase" autocomplete="off" required></div></div><button class="btn btn-danger" type="submit">Force delete student and all records</button></form>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -30,9 +30,9 @@ def manifest(request):
         'background_color': '#f6f8fc',
         'theme_color': '#0955b5',
         'icons': [
-            {'src': static('pwa/icon-192.png'), 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
-            {'src': static('pwa/icon-512.png'), 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
-            {'src': static('pwa/icon-maskable-512.png'), 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+            {'src': f"{static('pwa/icon-192.png')}?v=288", 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+            {'src': f"{static('pwa/icon-512.png')}?v=288", 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
+            {'src': f"{static('pwa/icon-maskable-512.png')}?v=288", 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
         ],
     }, json_dumps_params={'ensure_ascii': False})
     response['Content-Type'] = 'application/manifest+json; charset=utf-8'

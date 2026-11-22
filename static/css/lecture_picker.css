@@ -164,3 +164,83 @@
   .course-list-card--editable { grid-template-columns:minmax(0,1fr); padding:13px 14px; gap:9px; }
   .course-list-card--editable .course-list-card-aside { border-top:1px solid #f0f3f8; padding-top:10px; }
 }
+
+
+/* v2.8.6 — Multi-day assignment and card-local lecture editing. */
+.lecture-slot-label {
+  margin:0; line-height:16px; min-height:16px;
+  color:#60728a; font-size:11px; font-weight:800; text-transform:uppercase;
+}
+.stack-form .lecture-slot-grid {
+  grid-template-columns:minmax(300px,1.1fr) minmax(380px,1.35fr) minmax(150px,.55fr);
+}
+.lecture-day-field { min-width:0; }
+.lecture-day-options {
+  display:flex; flex-wrap:wrap; gap:7px;
+  min-height:62px; align-content:center;
+  padding:8px 10px; border:1px solid #dce4ed; border-radius:10px; background:#fff;
+}
+.lecture-day-check {
+  display:inline-flex; align-items:center; gap:6px;
+  margin:0; padding:7px 10px;
+  border:1px solid #dce5ef; border-radius:999px;
+  background:#f8fafc; color:#42566f;
+  font-size:11px; font-weight:700; cursor:pointer;
+  user-select:none;
+}
+.lecture-day-check input {
+  width:15px!important; height:15px!important; min-height:0!important;
+  margin:0!important; padding:0!important;
+}
+.lecture-day-check:has(input:checked) {
+  border-color:#9ebce8; background:#edf4fe; color:#1757a7;
+}
+.course-list-card-label-row {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:8px;
+}
+.course-list-card-label-row .course-list-card-label { margin:0; }
+.lecture-inline-editor { position:relative; }
+.lecture-inline-editor > summary {
+  list-style:none; cursor:pointer; user-select:none;
+  color:#1757a7; font-size:11px; font-weight:800;
+  padding:6px 10px; border:1px solid #cfdcf0; border-radius:8px;
+  background:#f3f7fd;
+}
+.lecture-inline-editor > summary::-webkit-details-marker { display:none; }
+.lecture-inline-editor[open] > summary { background:#eaf2fd; }
+.lecture-inline-editor-body {
+  margin-top:10px; display:flex; flex-direction:column; gap:8px;
+}
+.lecture-inline-row {
+  display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;
+  padding:10px; border:1px solid #e1e8f2; border-radius:10px; background:#fbfcfe;
+}
+.lecture-inline-form {
+  display:grid; grid-template-columns:minmax(130px,1fr) minmax(90px,.55fr) auto;
+  gap:8px; align-items:end; flex:1 1 330px; margin:0;
+}
+.lecture-inline-form .lecture-edit-field { gap:4px; }
+.lecture-inline-form select,
+.lecture-inline-form input {
+  width:100%; height:38px; min-height:38px; margin:0;
+  padding:7px 9px; border:1px solid #dce5f0; border-radius:8px;
+  background:#fff; color:#17283f;
+}
+.lecture-inline-form .btn,
+.lecture-inline-remove .btn {
+  min-height:38px; margin:0; padding:7px 12px;
+}
+.lecture-inline-remove { margin:0; }
+
+@media(max-width:1000px) {
+  .stack-form .lecture-slot-grid { grid-template-columns:1fr; }
+}
+@media(max-width:620px) {
+  .lecture-day-options { min-height:0; }
+  .lecture-day-check { flex:1 1 calc(50% - 7px); justify-content:flex-start; }
+  .lecture-inline-form { grid-template-columns:minmax(0,1fr) 95px; }
+  .lecture-inline-form .btn { grid-column:1 / -1; width:100%; }
+  .lecture-inline-remove { width:100%; }
+  .lecture-inline-remove .btn { width:100%; }
+}

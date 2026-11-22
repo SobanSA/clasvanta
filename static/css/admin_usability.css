@@ -329,3 +329,70 @@
 
 /* v2.8.1 configurable branding */
 .settings-branding-panel{max-width:760px}.branding-form{max-width:620px}.brand-preview{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--border,#dfe5ef);border-radius:14px;background:#f8fafc}.brand-preview .brand-mark{flex:0 0 auto}.brand-preview>span:last-child{display:flex;flex-direction:column;min-width:0}.brand-preview strong{font-size:1.05rem}.brand-preview small{color:#73809a;margin-top:2px}.branding-updated{margin-top:16px}
+
+
+/* Daily class status dashboard/detail enhancements */
+.metric-card-link{display:block;color:inherit;text-decoration:none;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+.metric-card-link:hover{text-decoration:none;color:inherit;transform:translateY(-2px);border-color:#c9d8ec;box-shadow:0 8px 28px rgba(20,45,85,.08)}
+.daily-status-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
+.daily-status-date-panel .attendance-date-form>div{display:grid;gap:5px}
+.daily-status-date-panel .attendance-date-form small{font-size:10px;color:var(--muted)}
+@media(max-width:1100px){.daily-status-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.daily-status-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:430px){.daily-status-summary{grid-template-columns:1fr}}
+
+/* Daily class status date-filter alignment hotfix */
+.daily-status-date-panel .daily-status-date-form{
+  display:grid;
+  grid-template-columns:minmax(250px,320px) auto;
+  align-items:start;
+  gap:14px;
+}
+.daily-status-date-panel .daily-status-date-field{
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+.daily-status-date-panel .daily-status-date-field input[type=date]{
+  width:100%;
+  min-width:0;
+}
+.daily-status-date-panel .daily-status-date-field small{
+  min-height:16px;
+  font-size:10px;
+  line-height:1.4;
+  color:var(--muted);
+}
+.daily-status-date-panel .daily-status-date-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding-top:26px;
+  flex-wrap:wrap;
+}
+.daily-status-date-panel .daily-status-date-actions .btn{
+  min-width:145px;
+}
+@media(max-width:760px){
+  .daily-status-date-panel .daily-status-date-form{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .daily-status-date-panel .daily-status-date-actions{
+    padding-top:0;
+    width:100%;
+  }
+  .daily-status-date-panel .daily-status-date-actions .btn{
+    flex:1 1 160px;
+  }
+}
+@media(max-width:480px){
+  .daily-status-date-panel .daily-status-date-actions{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .daily-status-date-panel .daily-status-date-actions .btn{
+    width:100%;
+  }
+}
+
