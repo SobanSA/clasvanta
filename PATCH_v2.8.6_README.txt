@@ -1,0 +1,40 @@
+Clasvanta — Lecture Assignments Local Patch
+============================================
+
+Changes
+-------
+- Edit lecture day and lecture number directly inside each subject-section card.
+- Removes the duplicated lower "Weekly lecture slots" edit list.
+- Replaces the single Day dropdown with weekday checkboxes.
+- One submission can add the same lecture number to multiple selected days.
+- Assignment Verification search now matches weekday names and lecture numbers.
+- Existing duplicate/clash validation remains active.
+- Historical attendance behaviour is unchanged.
+- No database migration is required.
+
+Install
+-------
+1. Keep your existing attendance_app backup.
+2. Extract this ZIP.
+3. Upload apply_patch.py to the project root (same folder as manage.py) using FileZilla.
+4. SSH:
+
+   cd /path/to/attendance_app
+   source .venv/bin/activate
+   python apply_patch.py
+   python manage.py check
+   python manage.py collectstatic --noinput
+
+5. Restart the Python application from Plesk.
+6. Hard refresh the browser with Ctrl+F5.
+
+Automatic backups
+-----------------
+academics/views.py.bak_lecture_inline_v286
+templates/academics/lecture_schedule.html.bak_lecture_inline_v286
+static/css/lecture_picker.css.bak_lecture_inline_v286
+
+Rollback
+--------
+Restore the three .bak_lecture_inline_v286 files to their original filenames,
+run collectstatic again, and restart the application.
