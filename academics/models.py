@@ -209,6 +209,7 @@ class AppBranding(models.Model):
 
     app_name = models.CharField(max_length=80, default='Clasvanta')
     subtitle = models.CharField(max_length=120, default='Academic Attendance & Management')
+    institute_name = models.CharField(max_length=140, default='Clasvanta')
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -225,10 +226,13 @@ class AppBranding(models.Model):
     def clean(self):
         self.app_name = (self.app_name or '').strip()
         self.subtitle = (self.subtitle or '').strip()
+        self.institute_name = (self.institute_name or '').strip()
         if not self.app_name:
             raise ValidationError('Application name is required.')
         if not self.subtitle:
             raise ValidationError('Application subtitle is required.')
+        if not self.institute_name:
+            raise ValidationError('Institute name is required.')
 
     def save(self, *args, **kwargs):
         # The application uses one branding row only. Keeping the canonical row

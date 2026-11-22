@@ -5,7 +5,7 @@
 <div class="page-heading">
   <span class="eyebrow">SUPER ADMIN ONLY</span>
   <h1>Application branding</h1>
-  <p>Rename the application for your institution without changing source code. Updates apply across sign-in, navigation, page titles and reports.</p>
+  <p>Configure the product identity separately from the institute name used on official printouts such as fine challans.</p>
 </div>
 
 <section class="panel settings-branding-panel">
@@ -22,12 +22,18 @@
     <div class="form-field">
       <label for="appSubtitle">Subtitle</label>
       <input id="appSubtitle" name="subtitle" maxlength="120" value="{{ branding.subtitle }}" required autocomplete="off">
-      <small class="help-text">A short institutional/product description shown beneath the application name.</small>
+      <small class="help-text">A short product description shown beneath the application name.</small>
+    </div>
+    <div class="form-field">
+      <label for="instituteName">Institute name</label>
+      <input id="instituteName" name="institute_name" maxlength="140" value="{{ branding.institute_name }}" required autocomplete="organization">
+      <small class="help-text">Used on official printouts such as fine payment challans. Default: Clasvanta.</small>
     </div>
     <div class="brand-preview" aria-label="Brand preview">
       <span class="brand-mark">{{ branding.app_name|slice:":1"|upper }}</span>
       <span><strong>{{ branding.app_name }}</strong><small>{{ branding.subtitle }}</small></span>
     </div>
+    <p class="help-text"><strong>Institute for printouts:</strong> {{ branding.institute_name }}</p>
     <div class="form-actions">
       <button class="btn btn-primary" type="submit">Save branding</button>
     </div>

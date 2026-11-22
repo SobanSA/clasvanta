@@ -53,6 +53,7 @@ urlpatterns = [
     path('attendance/manage/new/', attendance_views.admin_new_session, name='admin_new_session'),
     path('attendance/log/', attendance_views.audit_log, name='audit_log'),
     path('fines/', fine_views.fines_dashboard, name='fines_dashboard'),
+    path('fines/challan/<int:student_id>/', fine_views.fine_challan, name='fine_challan'),
     path('reports/', report_views.reports, name='reports'),
     path('admin/', admin.site.urls),
 ]

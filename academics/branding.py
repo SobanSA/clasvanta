@@ -10,12 +10,14 @@ from django.db import OperationalError, ProgrammingError
 
 DEFAULT_APP_NAME = 'Clasvanta'
 DEFAULT_SUBTITLE = 'Academic Attendance & Management'
+DEFAULT_INSTITUTE_NAME = 'Clasvanta'
 
 
 def default_branding():
     return SimpleNamespace(
         app_name=DEFAULT_APP_NAME,
         subtitle=DEFAULT_SUBTITLE,
+        institute_name=DEFAULT_INSTITUTE_NAME,
         updated_at=None,
         updated_by=None,
     )

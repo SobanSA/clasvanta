@@ -1,0 +1,27 @@
+Clasvanta v2.8.5 — Fine Challans & Timetable Compliance
+
+ADDED
+- academics/migrations/0006_appbranding_institute_name.py
+- fines/tests.py
+- templates/fines/challan.html
+- CHANGELOG_V2_8_5.md
+- INSTALL_V2_8_5.txt
+
+REPLACED / UPDATED
+- README.md
+- academics/branding.py
+- academics/models.py
+- academics/reports.py
+- academics/test_branding.py
+- academics/test_reports.py
+- academics/views.py
+- config/urls.py
+- fines/views.py
+- templates/fines/dashboard.html
+- templates/reports/index.html
+- templates/settings/branding.html
+
+DATABASE
+- One additive migration is required.
+- Adds AppBranding.institute_name with default: Clasvanta.
+- No academic, attendance, fine, student or audit records are deleted or rewritten.

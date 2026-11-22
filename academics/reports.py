@@ -38,6 +38,7 @@ from .models import (
 REPORT_TYPES = [
     ('compliance', 'Schedule compliance'),
     ('monthly_lecturer', 'Monthly missing & make-up lectures'),
+    ('timetable_compliance', 'Lec in timetable compliance'),
     ('daily', 'Daily attendance'),
     ('class', 'Class attendance'),
     ('student', 'Student attendance history'),
@@ -407,6 +408,101 @@ def _monthly_lecturer_report(offerings, month_start, report_end, filters):
             'held': sum(row['status'] == 'Held Lecture' for row in rows),
             'missing': sum(row['status'] == 'Missing Lecture' for row in rows),
             'makeup': sum(row['status'] == 'Make-up Lecture' for row in rows),
+        },
+    }
+
+
+def _timetable_compliance_report(offerings, month_start, report_end, filters):
+    """Compare regular timetable delivery with missing and Held make-up lectures.
+
+    Cancelled regular occurrences are intentionally outside this report. Future
+    scheduled occurrences are also excluded by the month-to-date reporting range.
+    A Held make-up can compensate for a missing regular occurrence in the
+    compliance percentage, capped at 100%.
+    """
+    offerings = list(offerings)
+    occurrences = _occurrences(offerings, month_start, report_end)
+    selected_class_id = filters.get('class_id')
+    selected_programme_id = filters.get('programme_id')
+
+    schedule_counts = dict(
+        WeeklySchedule.objects.filter(class_subject_id__in=[item.pk for item in offerings])
+        .values('class_subject_id')
+        .annotate(total=Count('id'))
+        .values_list('class_subject_id', 'total')
+    )
+
+    def visible_groups(offering):
+        groups = _linked_classes(offering)
+        if selected_class_id:
+            groups = [group for group in groups if group.pk == selected_class_id]
+        if selected_programme_id:
+            groups = [group for group in groups if group.programme_id == selected_programme_id]
+        return groups
+
+    buckets = {}
+    for offering in offerings:
+        for group in visible_groups(offering):
+            key = (offering.pk, group.pk)
+            buckets[key] = {
+                'offering': offering,
+                'lecturer': offering.lecturer,
+                'class_group': group,
+                'lec_in_timetable': schedule_counts.get(offering.pk, 0),
+                'expected': 0,
+                'held': 0,
+                'missing': 0,
+                'makeup_held': 0,
+            }
+
+    for occurrence in occurrences:
+        offering = occurrence['offering']
+        for group in visible_groups(offering):
+            bucket = buckets.get((offering.pk, group.pk))
+            if not bucket:
+                continue
+            if occurrence['source'] == 'REGULAR':
+                # Cancelled belongs to the separate schedule-compliance report.
+                if occurrence['state'] == 'HELD':
+                    bucket['expected'] += 1
+                    bucket['held'] += 1
+                elif occurrence['state'] == 'PENDING':
+                    bucket['expected'] += 1
+                    bucket['missing'] += 1
+            elif occurrence['source'] == 'MAKEUP' and occurrence['state'] == 'HELD':
+                bucket['makeup_held'] += 1
+
+    rows = []
+    for bucket in buckets.values():
+        if not (bucket['expected'] or bucket['makeup_held']):
+            continue
+        bucket['delivered'] = bucket['held'] + bucket['makeup_held']
+        raw_compliance = _percent(bucket['delivered'], bucket['expected']) if bucket['expected'] else 0.0
+        bucket['compliance'] = min(100.0, raw_compliance)
+        rows.append(bucket)
+
+    rows.sort(key=lambda item: (
+        1 if item['lecturer'] is None else 0,
+        (item['lecturer'].get_full_name() or item['lecturer'].username).lower() if item['lecturer'] else 'zzzz',
+        item['class_group'].code,
+        item['offering'].subject.name.lower(),
+    ))
+
+    expected = sum(item['expected'] for item in rows)
+    held = sum(item['held'] for item in rows)
+    missing = sum(item['missing'] for item in rows)
+    makeup_held = sum(item['makeup_held'] for item in rows)
+    delivered = held + makeup_held
+    return {
+        'rows': rows,
+        'summary': {
+            'rows': len(rows),
+            'expected': expected,
+            'held': held,
+            'missing': missing,
+            'makeup_held': makeup_held,
+            'delivered': delivered,
+            'compliance': min(100.0, _percent(delivered, expected)) if expected else 0.0,
         },
     }
 
@@ -835,6 +931,13 @@ def _xlsx_response(report_type, label, data, month_start, report_end):
              item['class_group'].code, item['lec_in_timetable'], item['date'], item['day'], item['status'], item['remarks']]
             for index, item in enumerate(data['rows'], start=1)
         ])
+    elif report_type == 'timetable_compliance':
+        _append_table(ws, ['Teacher Name', 'Class', 'Subject', 'Lec in timetable', 'Expected', 'Held', 'Missing', 'Make-up Held', 'Delivered', 'Compliance %'], [
+            [(item['lecturer'].get_full_name() or item['lecturer'].username) if item['lecturer'] else 'Unassigned',
+             item['class_group'].code, item['offering'].subject.name, item['lec_in_timetable'],
+             item['expected'], item['held'], item['missing'], item['makeup_held'], item['delivered'], item['compliance']]
+            for item in data['rows']
+        ])
     elif report_type == 'daily':
         _append_table(ws, ['Lecture', 'Subject', 'Code', 'Classes', 'Teacher', 'Type', 'Status', 'Present', 'Absent'], [
             [row['lecture_number'], row['offering'].subject.name, row['offering'].subject.code, row['offering'].class_codes_display,
@@ -906,6 +1009,8 @@ def reports(request):
 
     if report_type == 'monthly_lecturer':
         data = _monthly_lecturer_report(offerings, month_start, report_end, filters)
+    elif report_type == 'timetable_compliance':
+        data = _timetable_compliance_report(offerings, month_start, report_end, filters)
     elif report_type == 'daily':
         selected_date = _parse_date(request.GET.get('date', ''), report_end)
         # For a daily report the relevant terms/sections come from the date itself.
