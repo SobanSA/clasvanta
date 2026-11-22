@@ -768,8 +768,37 @@ def lecture_schedule_manage(request):
             action=request.POST.get('action','add')
             if action == 'add':
                 offering=ClassSubject.objects.filter(pk=int(request.POST['offering']), class_groups__term=active).distinct().get()
-                obj=WeeklySchedule(class_subject=offering, weekday=int(request.POST['weekday']), lecture_number=int(request.POST['lecture_number']))
-                obj.full_clean(); obj.save(); messages.success(request,'Lecture assignment added.')
+                raw_weekdays=request.POST.getlist('weekdays')
+                if not raw_weekdays and request.POST.get('weekday'):
+                    # Backward compatibility for any older cached form still posting a single day.
+                    raw_weekdays=[request.POST['weekday']]
+                if not raw_weekdays:
+                    raise ValueError('Select at least one lecture day.')
+
+                valid_days={value for value, _label in WeeklySchedule.DAYS}
+                weekdays=[]
+                for raw_day in raw_weekdays:
+                    day=int(raw_day)
+                    if day not in valid_days:
+                        raise ValueError('Invalid lecture day.')
+                    if day not in weekdays:
+                        weekdays.append(day)
+
+                lecture_number=int(request.POST['lecture_number'])
+                with transaction.atomic():
+                    for weekday in weekdays:
+                        obj=WeeklySchedule(
+                            class_subject=offering,
+                            weekday=weekday,
+                            lecture_number=lecture_number,
+                        )
+                        obj.full_clean()
+                        obj.save()
+                count=len(weekdays)
+                messages.success(
+                    request,
+                    f'{count} lecture assignment{"s" if count != 1 else ""} added.'
+                )
             elif action == 'edit':
                 obj=WeeklySchedule.objects.filter(pk=int(request.POST['id']), class_subject__class_groups__term=active).distinct().get()
                 obj.weekday=int(request.POST['weekday']); obj.lecture_number=int(request.POST['lecture_number'])
