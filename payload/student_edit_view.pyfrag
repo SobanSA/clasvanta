@@ -1,0 +1,41 @@
+@role_required('ADMIN','ACCOUNTS')
+@require_http_methods(['GET', 'POST'])
+def student_edit(request, student_id):
+    """Edit student identity details without altering enrollment or history."""
+    student = get_object_or_404(
+        StudentProfile.objects.select_related('user'),
+        pk=student_id,
+    )
+
+    if request.method == 'POST':
+        try:
+            registration = request.POST['registration_number'].strip().upper()
+            student_name = request.POST['student_name'].strip()
+            father_name = request.POST.get('father_name', '').strip()
+
+            if not registration or not student_name:
+                raise ValueError('Registration number and student name are required.')
+            if User.objects.filter(username__iexact=registration).exclude(pk=student.user_id).exists():
+                raise ValueError(f'{registration} already belongs to another account.')
+
+            with transaction.atomic():
+                locked = StudentProfile.objects.select_for_update().select_related('user').get(pk=student.pk)
+                user = User.objects.select_for_update().get(pk=locked.user_id)
+                user.username = registration
+                user.first_name = student_name
+                user.last_name = ''
+                user.full_clean()
+                user.save(update_fields=['username', 'first_name', 'last_name'])
+
+                locked.father_name = father_name
+                locked.full_clean()
+                locked.save(update_fields=['father_name'])
+
+            messages.success(request, 'Student details updated.')
+            return redirect('students_list')
+        except (ValueError, KeyError, ValidationError, IntegrityError, StudentProfile.DoesNotExist) as exc:
+            messages.error(request, f'Could not update student: {exc}')
+
+    return render(request, 'academics/student_edit.html', {
+        'student': student,
+    })

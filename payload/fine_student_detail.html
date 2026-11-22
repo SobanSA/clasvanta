@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Student fine ledger | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Fines / Student ledger{% endblock %}
+{% block content %}
+<div class="page-heading heading-row">
+  <div>
+    <span class="eyebrow">STUDENT FINE LEDGER</span>
+    <h1>{{ student.user.get_full_name|default:student.user.username }}</h1>
+    <p>{{ student.user.username }}{% if student.father_name %} · Father: {{ student.father_name }}{% endif %}{% if membership %} · {{ membership.class_group.code }} · {{ membership.class_group.programme.name }}{% endif %}</p>
+  </div>
+  <div class="hero-actions">
+    {% if outstanding %}<a class="btn btn-primary" href="{% url 'fine_challan' student.pk %}" target="_blank" rel="noopener">Print challan</a>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'fines_dashboard' %}">Back to fines</a>
+  </div>
+</div>
+
+<div class="metric-grid schedule-metrics">
+  <article class="metric-card compact"><span>Outstanding</span><strong>Rs {{ total_outstanding|floatformat:2 }}</strong><small>Current payable balance</small></article>
+  <article class="metric-card compact"><span>Ledger entries</span><strong>{{ ledger|length }}</strong><small>Charges, payments and relief preserved</small></article>
+</div>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Outstanding by subject</h2><p class="help-text">Current positive balances only.</p></div></div>
+  <div class="table-scroller">
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Class</th><th>Outstanding</th>{% if user.is_superuser %}<th>Super Admin concession</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for row, offering in outstanding %}
+      <tr>
+        <td><strong>{{ offering.subject.name }}</strong><small>{{ offering.subject.code }}</small></td>
+        <td>{{ offering.class_codes_display }}</td>
+        <td><strong>Rs {{ row.balance|floatformat:2 }}</strong></td>
+        {% if user.is_superuser %}
+        <td>
+          <form method="post" class="payment-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="concession">
+            <input type="hidden" name="offering" value="{{ offering.pk }}">
+            <input type="number" name="amount" min="0.01" max="{{ row.balance }}" step="0.01" placeholder="Concession" required>
+            <input type="text" name="reason" maxlength="300" placeholder="Reason" required>
+            <button class="btn btn-secondary" type="submit">Apply concession</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="{% if user.is_superuser %}4{% else %}3{% endif %}" class="empty-cell">This student has no outstanding fine.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if user.is_superuser and outstanding %}
+<section class="panel">
+  <div class="panel-head"><div><h2>Waive all current outstanding fines</h2><p class="help-text">Creates auditable waiver ledger entries; it does not delete the original fine charges.</p></div><span class="status-pill absent-pill">Super Admin only</span></div>
+  <div class="form-panel">
+    <form method="post" class="stack-form narrow-form" onsubmit="return confirm('Waive all current outstanding fines for this student? The waiver will be recorded in the ledger.');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="waive_all">
+      <label for="waiverReason">Reason</label>
+      <input id="waiverReason" type="text" name="reason" maxlength="300" placeholder="Reason for full waiver" required>
+      <button class="btn btn-danger" type="submit">Waive Rs {{ total_outstanding|floatformat:2 }}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Complete ledger history</h2><p class="help-text">Append-only financial history. Concessions and waivers remain visible with actor and timestamp.</p></div></div>
+  <div class="table-scroller">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Subject</th><th>Type</th><th>Amount</th><th>Note / reason</th><th>Actor</th></tr></thead>
+      <tbody>
+      {% for entry in ledger %}
+      <tr>
+        <td>{{ entry.created_at|date:"j M Y, H:i" }}</td>
+        <td><strong>{{ entry.class_subject.subject.short_name }}</strong><small>{{ entry.class_subject.class_codes_display }}</small></td>
+        <td>{{ entry.get_kind_display }}</td>
+        <td><strong>{% if entry.amount > 0 %}+{% endif %}Rs {{ entry.amount|floatformat:2 }}</strong></td>
+        <td>{{ entry.note|default:"—" }}</td>
+        <td>{% if entry.actor %}{{ entry.actor.get_full_name|default:entry.actor.username }}{% else %}System{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="empty-cell">No fine ledger history for this student.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

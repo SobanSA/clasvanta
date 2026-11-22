@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Edit student | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Students / Edit student{% endblock %}
+{% block content %}
+<div class="page-heading heading-row">
+  <div>
+    <span class="eyebrow">STUDENT DETAILS</span>
+    <h1>Edit student</h1>
+    <p>Update identity details only. Class enrollment, attendance and fine history are not changed.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'students_list' %}">Back to enrolled students</a>
+</div>
+<section class="panel form-panel">
+  <form method="post" class="stack-form narrow-form">
+    {% csrf_token %}
+    <label for="editRegistration">Registration number</label>
+    <input id="editRegistration" name="registration_number" value="{{ student.user.username }}" required autocomplete="off">
+    <label for="editStudentName">Student name</label>
+    <input id="editStudentName" name="student_name" value="{{ student.user.get_full_name|default:student.user.first_name }}" required autocomplete="name">
+    <label for="editFatherName">Father name <span class="muted">(optional)</span></label>
+    <input id="editFatherName" name="father_name" value="{{ student.father_name }}" autocomplete="off">
+    <p class="help-text">Changing the registration number also changes the student's login ID. Existing attendance, fines and enrollment records stay linked to the same student profile.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" type="submit">Save student details</button>
+      <a class="btn btn-secondary" href="{% url 'students_list' %}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
