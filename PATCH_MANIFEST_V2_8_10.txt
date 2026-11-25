@@ -1,0 +1,33 @@
+CLASVANTA v2.8.10 PATCH MANIFEST
+Baseline: installed v2.8.9. SHA-256 checksums apply to ZIP source files.
+NEW = create; REPLACE = overwrite existing file.
+
+REPLACE README.md
+        SHA256 257c20a718a86fbd05c173fefc48e0571c3683de98628f96c41fca071ead52bf
+NEW     academics/staff_students.py
+        SHA256 14555314bc1a7848cce904401db28eabf3d443fe854bf73005dab0983051a98b
+NEW     academics/test_staff_students.py
+        SHA256 34b7509a567164c93b36ffe1a69f884d80ea6ec5767940fb4dcaa345c49df97d
+REPLACE academics/views.py
+        SHA256 7a0598c51480efa13df9e9b66530e557f75d09fd9d6eb65c60173c1f386164c7
+REPLACE config/urls.py
+        SHA256 27a65e48ad25624e99ac2206d24dbacfd1cd1a66f13168499d9519e346ac94c5
+NEW     static/css/staff_student_profiles.css
+        SHA256 c92984515101f82bf1700ed122bdaa827519d837294a507435688a7b6190718c
+NEW     templates/academics/_student_profile_search.html
+        SHA256 b5bceebbfe70f65e6bfc562e6bcd762a95ccb561c76a7385f016f571bb88fa4d
+REPLACE templates/academics/student_edit.html
+        SHA256 517b786e9afeca899a12ba39cec3f7d5a0aeb23591dfbd9f27e600ea24c88dce
+NEW     templates/academics/student_profile_detail.html
+        SHA256 6c3671a2921ff42e02207f7e77079dfd8640efe0780bf7c3e2b318b402ecff05
+NEW     templates/academics/student_profiles.html
+        SHA256 89e1d05db6be03ad7cffa3d56600db3175db54021c031d9569a3e9d4d9b4791e
+NEW     templates/academics/student_reset_password.html
+        SHA256 798b612744cb52741ff604ed3b5e35a5e4755ff418d78bc471b78e086ab46bbe
+REPLACE templates/academics/students_list.html
+        SHA256 7c882d5b04d39eb7a5114d2cd4390c3a8893cf00056f607a2a0a9023750d6691
+REPLACE templates/base.html
+        SHA256 7c8e09385bbd5e2cdb464be032e4a95a721229af6ec888a98e77aad051a5bad9
+
+INSTALL_V2_8_10.txt and this manifest are reference documents.
+No migrations, settings, credentials, DB or uploaded records are included.

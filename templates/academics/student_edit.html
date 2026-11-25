@@ -8,11 +8,12 @@
     <h1>Edit student</h1>
     <p>Update identity and contact details. Class enrollment, attendance and fine history are not changed.</p>
   </div>
-  <a class="btn btn-secondary" href="{% url 'students_list' %}">Back to enrolled students</a>
+  {% if return_to_profile %}<a class="btn btn-secondary" href="{% url 'student_profile_detail' student.pk %}">Back to student profile</a>{% else %}<a class="btn btn-secondary" href="{% url 'students_list' %}">Back to enrolled students</a>{% endif %}
 </div>
 <section class="panel form-panel">
   <form method="post" class="stack-form narrow-form">
     {% csrf_token %}
+    {% if return_to_profile %}<input type="hidden" name="return_to" value="profile">{% endif %}
     <label for="editRegistration">Registration number</label>
     <input id="editRegistration" name="registration_number" value="{{ student.user.username }}" required autocomplete="off">
     <label for="editStudentName">Student name</label>
@@ -25,7 +26,7 @@
     <p class="help-text">Changing the registration number also changes the student's login ID. Existing attendance, fines and enrollment records stay linked to the same student profile.</p>
     <div class="hero-actions">
       <button class="btn btn-primary" type="submit">Save student details</button>
-      <a class="btn btn-secondary" href="{% url 'students_list' %}">Cancel</a>
+      <a class="btn btn-secondary" href="{% if return_to_profile %}{% url 'student_profile_detail' student.pk %}{% else %}{% url 'students_list' %}{% endif %}">Cancel</a>
     </div>
   </form>
 </section>

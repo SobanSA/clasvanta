@@ -1,0 +1,95 @@
+CLASVANTA v2.8.10 — STAFF STUDENT PROFILES & PASSWORD RESET
+=============================================================
+BASELINE: installed Clasvanta v2.8.9 (including migration academics 0008).
+This is a FileZilla replacement-file patch, not a complete application.
+Do not use this on v2.8.8 without applying v2.8.9 first.
+
+FEATURES
+- Students > Student profiles for Admin, Super Admin, and Accounts.
+- Search students by registration number, full name, father name, or WhatsApp
+  (local or international phone format). Includes historical/inactive accounts.
+  Press Search; only matching results are shown. Select a result to close the list.
+- Individual profile: identity, contacts, status, current-term attendance and
+  assigned sections, weekly timetable, all-term outstanding fines, enrolment history.
+- Profile links in Enrolled students. Existing edit/attendance/fine links retain
+  the original permissions; the Edit screen can return to the selected profile.
+- Admin/Super Admin password reset from both Enrolled students and Student profiles.
+  Accounts cannot reset passwords or manage account status, including direct URLs.
+- Explicit confirmation, secure generated 16-character temporary password,
+  compulsory password change, replay protection, no password stored in a session,
+  URL or message. Copy password immediately from the successful response.
+- Resetting a password does not change active/inactive status, contact details,
+  attendance, enrolment, fine ledger or other academic records.
+- Existing v2.8.9 compulsory contact completion continues after password change.
+- No migrations, new dependencies, production settings, or patch scripts.
+
+INSTALL USING FILEZILLA + PLESK
+1. Back up your current application directory and MariaDB database. Use a staging
+   copy if available. If possible, prevent live traffic during file replacement.
+2. Verify v2.8.9 is installed and academics migration 0008 is already applied.
+3. Extract the ZIP on your computer. Navigate in FileZilla to the live project
+   directory containing manage.py. Merge the academics/, config/, static/ and
+   templates/ directories into the existing directories. Overwrite matching files.
+   Upload README.md if you want the updated local project documentation.
+   INSTALL_V2_8_10.txt and PATCH_MANIFEST_V2_8_10.txt are reference documents only.
+   Do NOT delete directories, replace config/settings.py, or overwrite your .env,
+   virtualenv, public/static, private/uploads or database.
+4. In Plesk's terminal, change to the app directory containing manage.py, activate
+   its virtual environment and run (stop if any command fails):
+
+   source .venv/bin/activate
+   python manage.py showmigrations academics
+   python manage.py check
+   python manage.py makemigrations --check --dry-run
+   DJANGO_SECRET_KEY=test-only-local-secret python manage.py test academics.test_staff_students --settings=config.test_settings -v 2
+   DJANGO_SECRET_KEY=test-only-local-secret python manage.py test --settings=config.test_settings
+   python manage.py collectstatic --noinput
+   python manage.py check
+
+   Confirm [X] 0008_studentprofile_whatsapp_number. No new migration is required.
+   config.test_settings uses an isolated SQLite test database; do not run tests
+   with the production settings/database. The test-only key above is passed to
+   those commands only. Do not replace your production Django secret key.
+5. Restart the Python application through Plesk. If the sidebar is stale, refresh
+   the browser/PWA. Do not reset the service worker or database unnecessarily.
+
+MANUAL ACCEPTANCE CHECKS (use disposable test student accounts)
+- Admin/Super Admin: Students > Student profiles; search all four ways, including
+  a WhatsApp number in local format, then select a student. Search results should
+  no longer occupy screen space. Open Profile from Enrolled students as well.
+- Verify student data, active term, assignment counts, Held-only attendance,
+  weekly lecture list, previous enrolments and fine balance. Check mobile layout.
+- Reset a test student's password. Cancel first: original password must work.
+  Then confirm, copy temporary password, and open another page. A fresh GET does
+  not show the old temporary password. Refreshing the original successful POST
+  may prompt to resubmit; resubmitting an already used token returns an error,
+  without changing the password a second time. After 10 minutes request a fresh
+  confirmation. A reset never activates an inactive account.
+- Confirm the old password fails, the temporary password works and triggers the
+  mandatory password change. If the student is missing father name or WhatsApp,
+  the existing compulsory contact screen then appears. Verify all data is intact.
+- Sign in as Accounts: search, view profile, edit student contacts, view attendance
+  and fines; confirm Reset password and Manage account status are absent. Direct
+  access to the reset endpoint must return 403. Lecturer/student accounts must
+  not have staff access. Confirm no actual password or student data is shared
+  outside authorized staff views.
+
+ROLLBACK
+No database schema change. Restore overwritten files from your v2.8.9 backup.
+Remove only files labelled NEW in the manifest if you want a complete rollback,
+then collectstatic and restart. A password already reset will remain changed;
+restoring code does not restore old password hashes. Do not roll back the v2.8.9
+contact migration. No automatic GitHub changes are included.
+
+VALIDATION PERFORMED BEFORE PACKAGING
+- All 74 Python source files in the reconstructed working tree parsed with the
+  Python 3.10 grammar. New/modified template tag/route/include checks and CSS
+  parsing passed. Existing 4 dependency-free WhatsApp normalization tests passed.
+- Chromium mock-data layout checks of the actual new template markup and CSS
+  (search, detail, confirm, result) passed at 320/375/390/768/1280 px widths.
+  These are mock-data layout checks, not Django-rendered browser integration.
+- 14 new Django tests are included for search, data scopes, permissions, account
+  and password safety, contact flow, CSRF, and one-time/expired confirmation.
+  Full Django integration suite NOT RUN here: Django is unavailable in the
+  sandbox and package/network access is blocked. Run the commands above on Plesk
+  or a staging instance before activating the patch.

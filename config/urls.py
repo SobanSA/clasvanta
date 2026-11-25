@@ -6,6 +6,7 @@ from accounts import views as account_views
 from academics import views as academic_views
 from academics import lecturers as lecturer_admin_views
 from academics import student_portal as student_portal_views
+from academics import staff_students as staff_student_views
 from academics import reports as report_views
 from config import pwa as pwa_views
 from attendance import views as attendance_views
@@ -24,6 +25,9 @@ urlpatterns = [
     path('structure/', academic_views.academic_structure, name='academic_structure'),
     path('students/', academic_views.students_list, name='students_list'),
     path('students/add/', academic_views.student_add, name='student_add'),
+    path('students/profiles/', staff_student_views.student_profiles, name='student_profiles'),
+    path('students/profiles/<int:student_id>/', staff_student_views.student_profile_detail, name='student_profile_detail'),
+    path('students/<int:student_id>/reset-password/', staff_student_views.student_reset_password, name='student_reset_password'),
     path('students/<int:student_id>/edit/', academic_views.student_edit, name='student_edit'),
     path('students/<int:student_id>/delete/', academic_views.student_delete, name='student_delete'),
     path('students/attendance/', academic_views.student_attendance, name='student_attendance'),

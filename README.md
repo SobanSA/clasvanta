@@ -2,7 +2,7 @@
 
 **Academic Attendance & Management**
 
-Clasvanta is a Django-based academic attendance management system for administrators, lecturers, accounts staff, and students. This repository contains the **consolidated v2.8.9 source**: the historical patch releases and the live maintenance patches have been folded into the application files, so a fresh download does **not** require running any `apply_patch.py` or `install_*.py` scripts.
+Clasvanta is a Django-based academic attendance management system for administrators, lecturers, accounts staff, and students. This repository contains the **consolidated v2.8.10 source**: the historical patch releases and the live maintenance patches have been folded into the application files, so a fresh download does **not** require running any `apply_patch.py` or `install_*.py` scripts.
 
 ## Current capabilities
 
@@ -19,6 +19,7 @@ Clasvanta is a Django-based academic attendance management system for administra
 - Student portal: dashboard, attendance, schedule, fines, profile, and weekly timetable
 - Lecturer profile with regular weekly teaching workload
 - Student management: add, edit, activate/deactivate, safe delete, and explicitly confirmed force delete
+- Staff-facing Student Profiles directory, academic overview and enrolment history; Admin-only temporary student password reset
 - Compulsory student contact completion: father name and active WhatsApp number, plus staff search/filter support
 - Accounts role with restricted student/fine access and read-only fine access
 - Fine reconciliation based on absences from Held classes
@@ -47,11 +48,12 @@ The `Accounts` application role is synchronized from the Django Group named **Ac
 
 - Enrolled students
 - Student attendance lookup
+- Student Profiles: search and view academic/contact information, attendance, and fines
 - Add/edit student details
 - Fines and student fine ledger/history
 - Fine challan printing
 
-Accounts users do not receive Advanced Administration, academic setup, lecturer management, attendance-management, reporting, bulk-import, settings, or student-deletion permissions. Fine access is read-only.
+Accounts users do not receive Advanced Administration, academic setup, lecturer management, attendance-management, reporting, bulk-import, settings, or student-deletion permissions. Fine access is read-only. Student password resets and account activation/deactivation are restricted to Admin and Super Admin.
 
 ### Lecturer
 
@@ -172,7 +174,20 @@ python manage.py makemigrations --check --dry-run
 
 All students must provide a father's name and an active WhatsApp number before accessing their student portal. Forced password change always takes priority. Existing details are preserved; only missing fields are requested. The student may supply a missing father's name once, but cannot edit the saved name, registration ID or academic details. The WhatsApp number can be changed at any time from My Profile; it cannot be cleared by the student. Admin and Accounts users can add or correct these fields and filter/search the enrolled roster. The database migration adds an optional `whatsapp_number` field without altering historical records. Phone numbers are normalized and syntax-checked; no OTP or WhatsApp API is used. Keep contact details private and restrict access to authorized staff.
 
+## Student profiles and password resets (v2.8.10)
+
+Open Students → Student profiles from the main application as Admin, Super Admin or Accounts. Search by registration number, name, father name or WhatsApp number. Search includes inactive accounts and historical enrolments; results are not displayed until a search is submitted, and selecting a student opens a dedicated profile. Attendance uses current-term Held records; weekly lectures use the recurring timetable; outstanding fines sum positive subject-section ledger balances across all terms. Accounts can view the profile and use existing student-edit, attendance and fine permissions, but cannot reset passwords or manage activation status.
+
+Admin and Super Admin can reset a student password from Enrolled students or Student profiles. Confirm the target student to generate a secure temporary password, shown only on the successful non-cacheable response. Copy it immediately; it is not saved in a session or included in a URL or message. Refreshing/replaying the confirmation cannot reset the password again. Old passwords and existing authenticated sessions become invalid. The student must change the temporary password before completing any missing contact information or accessing academic pages. Resetting does not reactivate an inactive account or alter any academic/contact records.
+
 ## Release history
+
+### v2.8.10 — Staff student profiles and password reset
+
+- Added a searchable staff-facing Student Profiles screen and profile links in Enrolled students for Admin, Super Admin and Accounts.
+- Added profile completeness/account status, contact details, current-term metrics, assigned subjects/lecturers, weekly timetable, all-term fine balance and enrolment history.
+- Added Admin/Super Admin-only student password reset with explicit confirmation, one-time password display, replay protection and compulsory password change.
+- Preserved v2.8.9 student contact completion and existing permissions. No database migration or new dependency.
 
 ### v2.8.9 — Compulsory student contact completion
 

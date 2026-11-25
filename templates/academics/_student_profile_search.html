@@ -1,0 +1,13 @@
+<section class="panel staff-profile-search" aria-labelledby="student-profile-search-title">
+  <h2 id="student-profile-search-title">Find a student</h2>
+  <form method="post" action="{% url 'student_profiles' %}" class="staff-profile-search-form" role="search">
+    {% csrf_token %}
+    <div class="staff-profile-search-field">
+      <label for="{{ search_form.q.id_for_label }}">Search by registration number, student name, father name or WhatsApp</label>
+      {{ search_form.q }}
+      {{ search_form.q.errors }}
+    </div>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+  <p class="help-text">Search includes inactive accounts and students from previous terms. The results close when you select a student.</p>
+</section>

@@ -41,6 +41,7 @@
    </div></details>
    <details class="nav-group" open><summary><span class="nav-icon">♙</span> Students <span class="nav-chev">⌄</span></summary><div class="nav-submenu">
      <a href="{% url 'students_list' %}">Enrolled students</a>
+     <a href="{% url 'student_profiles' %}" class="{% if request.resolver_match.url_name == 'student_profiles' or request.resolver_match.url_name == 'student_profile_detail' or request.resolver_match.url_name == 'student_reset_password' %}active{% endif %}">Student profiles</a>
      <a href="{% url 'student_attendance' %}">Student attendance</a>
      <a href="{% url 'student_add' %}">Add student</a>
      <a href="{% url 'bulk_import' 'students' %}">Import students</a>
@@ -59,6 +60,7 @@
    {% elif user.role == 'ACCOUNTS' %}
    <details class="nav-group" open><summary><span class="nav-icon">♙</span> Students <span class="nav-chev">⌄</span></summary><div class="nav-submenu">
      <a href="{% url 'students_list' %}">Enrolled students</a>
+     <a href="{% url 'student_profiles' %}" class="{% if request.resolver_match.url_name == 'student_profiles' or request.resolver_match.url_name == 'student_profile_detail' or request.resolver_match.url_name == 'student_reset_password' %}active{% endif %}">Student profiles</a>
      <a href="{% url 'student_attendance' %}">Student attendance</a>
      <a href="{% url 'student_add' %}">Add student</a>
    </div></details>

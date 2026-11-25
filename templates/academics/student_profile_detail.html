@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Student profile | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Students / Student profiles{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/staff_student_profiles.css' %}?v=2810">{% endblock %}
+{% block content %}
+<div class="page-heading heading-row"><div><span class="eyebrow">STUDENT MANAGEMENT</span><h1>Student profile</h1><p>Identity, contact information, current academic record and enrolment history.</p></div><a class="btn btn-secondary" href="{% url 'students_list' %}">Enrolled students</a></div>
+{% include 'academics/_student_profile_search.html' %}
+<section class="panel staff-profile-card">
+  <div class="staff-profile-identity">
+    <div class="staff-profile-avatar" aria-hidden="true">{{ student.user.username|slice:':1'|upper }}</div>
+    <div class="staff-profile-identity-name"><span class="eyebrow">SELECTED STUDENT</span><h2>{{ student.user.get_full_name|default:student.user.username }}</h2><p>{{ student.user.username }}</p>
+      <div class="staff-profile-statuses"><span class="status-pill {% if student.user.is_active %}done{% endif %}">{% if student.user.is_active %}Active{% else %}Inactive{% endif %}</span><span class="status-pill {% if student.contact_details_complete %}done{% else %}pending{% endif %}">{% if student.contact_details_complete %}Profile complete{% else %}Contact details incomplete{% endif %}</span>{% if student.user.must_change_password %}<span class="status-pill pending">Password change required</span>{% endif %}</div>
+    </div>
+  </div>
+  <h3 class="staff-profile-subheading">Personal and account details</h3>
+  <dl class="staff-profile-fields">
+    <div><dt>Student name</dt><dd>{{ student.user.get_full_name|default:student.user.username }}</dd></div>
+    <div><dt>Registration number / login ID</dt><dd>{{ student.user.username }}</dd></div>
+    <div><dt>Father's name</dt><dd>{% if student.missing_father_name %}<span class="staff-profile-missing">Not provided</span>{% else %}{{ student.father_name }}{% endif %}</dd></div>
+    <div><dt>WhatsApp number</dt><dd>{% if student.missing_whatsapp_number %}<span class="staff-profile-missing">Not provided</span>{% else %}{{ student.whatsapp_number }}{% endif %}</dd></div>
+    <div><dt>Programme</dt><dd>{% if membership %}{{ membership.class_group.programme.name }}{% else %}—{% endif %}</dd></div>
+    <div><dt>Class</dt><dd>{% if membership %}{{ membership.class_group.code }} · {{ membership.class_group.name }}{% else %}—{% endif %}</dd></div>
+    <div><dt>Active academic term</dt><dd>{% if membership %}{{ membership.term.name }}{% else %}No active enrolment{% endif %}</dd></div>
+    <div><dt>Last login</dt><dd>{% if student.user.last_login %}{{ student.user.last_login|date:'j M Y, H:i' }}{% else %}Never logged in{% endif %}</dd></div>
+  </dl>
+  <div class="staff-profile-actions">
+    <a class="btn btn-primary" href="{% url 'student_edit' student.pk %}?return_to=profile">Edit details</a>
+    {% if user.is_superuser or user.role == 'ADMIN' %}<a class="btn btn-secondary" href="{% url 'student_reset_password' student.pk %}">Reset password</a>{% endif %}
+    {% if membership %}<a class="btn btn-secondary" href="{% url 'student_attendance' %}?student={{ student.pk }}">View attendance</a>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'fine_student_detail' student.pk %}">View fines</a>
+    {% if user.is_superuser or user.role == 'ADMIN' %}<a class="btn btn-secondary" href="{% url 'student_delete' student.pk %}">Manage account status</a>{% endif %}
+  </div>
+</section>
+<div class="section-heading"><div><h2>Academic overview</h2><p>Attendance and timetable use the active enrolment. Outstanding fines include all terms.</p></div></div>
+<div class="staff-profile-metrics">
+  <article class="metric-card"><span>Attendance</span><strong>{% if summary.percentage != None %}{{ summary.percentage }}%{% else %}—{% endif %}</strong><small>{{ summary.present }} attended / {{ summary.total }} held</small></article>
+  <article class="metric-card"><span>Assigned sections</span><strong>{{ summary.subject_count }}</strong><small>Current class</small></article>
+  <article class="metric-card"><span>Weekly lectures</span><strong>{{ weekly.summary.lecture_count }}</strong><small>Recurring timetable</small></article>
+  <article class="metric-card"><span>Outstanding fines</span><strong>Rs {{ summary.outstanding|floatformat:2 }}</strong><small>Positive balances, all terms</small></article>
+</div>
+{% if not membership %}<div class="panel empty-state">No active enrolment. Previous enrolments and outstanding fines are still available.</div>{% endif %}
+<section class="panel staff-profile-section"><div class="staff-profile-heading"><h2>Assigned subjects and lecturers</h2><span class="count-badge">{{ subjects|length }}</span></div>
+  <div class="staff-profile-records">
+    {% for row in subjects %}<article class="staff-profile-record"><div><strong>{{ row.offering.subject.name }}</strong><small>{{ row.offering.subject.code }} · {{ row.offering.section_code|default:row.offering.subject.short_name }}</small><small>Lecturer: {% if row.offering.lecturer %}{{ row.offering.lecturer.get_full_name|default:row.offering.lecturer.username }}{% else %}Not assigned{% endif %}</small></div><div class="staff-profile-record-stat"><strong>{{ row.present }} / {{ row.total }}</strong><small>Attended / Held</small></div></article>
+    {% empty %}<p class="empty-cell">No subjects assigned for the current enrolment.</p>{% endfor %}
+  </div>
+</section>
+<section class="profile-workload-section staff-profile-weekly">
+  <div class="section-heading"><div><h2>Weekly timetable</h2><p>Regular lectures only. One-off make-up classes are not included.</p></div></div>
+  <div class="weekly-workload-grid">
+    {% for day in weekly.days %}<article class="panel workload-day-card"><div class="workload-day-head"><h3>{{ day.label }}</h3><span class="count-badge">{{ day.lectures|length }}</span></div><div class="workload-day-list">
+      {% for item in day.lectures %}<div class="workload-lecture-row"><span class="workload-lecture-no">L{{ item.lecture_number }}</span><div><strong>{{ item.subject.name }}</strong><small>{{ item.subject.code }}{% if item.lecturer %} · {{ item.lecturer.get_full_name|default:item.lecturer.username }}{% endif %}</small></div></div>{% empty %}<div class="workload-empty">No regular lectures.</div>{% endfor %}
+    </div></article>{% endfor %}
+  </div>
+</section>
+<section class="panel staff-profile-section"><div class="staff-profile-heading"><h2>Academic enrolment history</h2><span class="count-badge">{{ memberships|length }}</span></div><div class="staff-profile-records">
+  {% for item in memberships %}<article class="staff-profile-record"><div><strong>{{ item.term.name }}</strong><small>{{ item.class_group.programme.name }} · {{ item.class_group.code }} · {{ item.class_group.name }}</small><small>{{ item.term.start_date|date:'j M Y' }} – {{ item.term.end_date|date:'j M Y' }}</small></div><span class="status-pill {% if item.term.is_active %}done{% endif %}">{% if item.term.is_active %}Active term{% else %}Previous term{% endif %}</span></article>{% empty %}<p class="empty-cell">No enrolment history.</p>{% endfor %}
+</div></section>
+{% endblock %}

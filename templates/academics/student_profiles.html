@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Student profiles | {{ app_branding.app_name }}{% endblock %}
+{% block crumb %}Students / Student profiles{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/staff_student_profiles.css' %}?v=2810">{% endblock %}
+{% block content %}
+<div class="page-heading heading-row"><div><span class="eyebrow">STUDENT MANAGEMENT</span><h1>Student profiles</h1><p>Find an individual student and review their academic and account details.</p></div><a href="{% url 'students_list' %}" class="btn btn-secondary">Enrolled students</a></div>
+{% include 'academics/_student_profile_search.html' %}
+{% if searched %}
+<section class="panel staff-profile-results" aria-labelledby="student-profile-results-title">
+  <div class="staff-profile-heading"><h2 id="student-profile-results-title">Matching students</h2><span class="count-badge">{{ results|length }}{% if truncated %}+{% endif %}</span></div>
+  {% if truncated %}<p class="help-text">Showing the first {{ search_limit }} results. Refine the search to find a specific student.</p>{% endif %}
+  <div class="staff-profile-results-list">
+    {% for student in results %}
+    <a class="staff-profile-result" href="{% url 'student_profile_detail' student.pk %}">
+      <div><strong>{{ student.user.get_full_name|default:student.user.username }}</strong><small>{{ student.user.username }}{% if student.father_name %} · Father: {{ student.father_name }}{% endif %}</small>{% if student.whatsapp_number %}<small>{{ student.whatsapp_number }}</small>{% endif %}</div>
+      <span class="status-pill {% if student.user.is_active %}done{% endif %}">{% if student.user.is_active %}Active{% else %}Inactive{% endif %}</span><span aria-hidden="true">›</span>
+    </a>
+    {% empty %}<p class="empty-cell">No students match this search. Try a different name or registration number.</p>{% endfor %}
+  </div>
+</section>
+{% elif not search_form.errors %}
+<section class="panel empty-state"><strong>Find a student to begin</strong><p>Enter a name, registration number or contact detail above. No student data is shown until you search.</p></section>
+{% endif %}
+{% endblock %}

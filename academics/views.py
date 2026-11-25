@@ -710,6 +710,8 @@ def student_edit(request, student_id):
         pk=student_id,
     )
 
+    return_to_profile = (request.POST.get('return_to') if request.method == 'POST' else request.GET.get('return_to')) == 'profile'
+
     if request.method == 'POST':
         try:
             registration = request.POST['registration_number'].strip().upper()
@@ -738,12 +740,14 @@ def student_edit(request, student_id):
                 locked.save(update_fields=['father_name', 'whatsapp_number'])
 
             messages.success(request, 'Student details updated.')
+            if return_to_profile:
+                return redirect('student_profile_detail', student_id=student.pk)
             return redirect('students_list')
         except (ValueError, KeyError, ValidationError, IntegrityError, StudentProfile.DoesNotExist) as exc:
             messages.error(request, f'Could not update student: {exc}')
 
     return render(request, 'academics/student_edit.html', {
-        'student': student,
+        'student': student, 'return_to_profile': return_to_profile,
     })
 
 @role_required('ADMIN','ACCOUNTS')
