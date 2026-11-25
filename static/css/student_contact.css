@@ -1,0 +1,35 @@
+/* Clasvanta v2.8.9 — mandatory contact details and student self-service. */
+.contact-gate-body{min-height:100vh;margin:0;background:#f6f8fc;color:var(--ink,#182b45)}
+.contact-gate-wrap{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
+.contact-gate-card{width:min(100%,520px);max-width:100%;padding:clamp(20px,5vw,32px);box-sizing:border-box;margin:0;background:#fff}
+.contact-gate-brand.brand{margin:0 0 24px;padding:0;display:flex;align-items:center;text-decoration:none;min-width:0}
+.contact-gate-brand>span:last-child{min-width:0;overflow-wrap:anywhere}
+.contact-gate-card h1{font-size:clamp(24px,5vw,30px);line-height:1.25;margin:8px 0 10px;letter-spacing:-.025em}
+.contact-intro{font-size:14px;line-height:1.55;color:var(--muted,#63748b);margin:0 0 20px}
+.contact-identity{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 22px;padding:16px;border:1px solid var(--line,#e1e8f0);border-radius:10px;background:#f8fafc}
+.contact-identity>div{min-width:0}
+.contact-identity dt{font-size:11px;font-weight:700;color:var(--muted,#63748b);margin-bottom:5px}
+.contact-identity dd{margin:0;font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.contact-form{display:grid;gap:16px;min-width:0}
+.contact-gate-card>form.contact-form,.contact-update-panel>form.contact-form{padding:0}
+.contact-form-field{display:grid;gap:7px;min-width:0}
+.contact-form-field>label{font-size:12px;font-weight:750;margin:0;color:var(--ink,#182b45)}
+.contact-form-field>input{width:100%;min-width:0;min-height:46px;box-sizing:border-box;font-size:16px}
+.contact-form .help-text{font-size:12px;line-height:1.5;margin:0;color:var(--muted,#63748b)}
+.contact-form .errorlist{list-style:none;margin:0;padding:0;color:#b42335;font-size:12px;line-height:1.45}
+.contact-form [aria-invalid="true"]{border-color:#c83e4f}
+.contact-privacy-note{font-size:12px;line-height:1.55;color:var(--muted,#63748b);margin:0}
+.contact-gate-card .btn-full{width:100%;justify-content:center;min-height:46px}
+.contact-signout{margin:18px 0 0;text-align:center}
+.contact-signout .text-button{min-height:44px;padding:8px 12px;text-decoration:underline}
+.contact-update-panel{max-width:760px;padding:20px;margin-top:16px}
+.contact-update-panel .panel-head{padding:0;margin:0 0 16px}
+.contact-update-panel .contact-form{max-width:520px}
+.contact-update-panel .contact-form>.btn{justify-self:start;min-height:42px}
+.contact-missing{font-size:12px;font-weight:650;color:#9a5c14}
+.contact-number{white-space:nowrap}
+.student-roster-filter-form{grid-template-columns:repeat(4,minmax(0,1fr))}
+.student-roster-table{min-width:1020px}
+@media(max-width:1200px){.student-roster-filter-form{grid-template-columns:repeat(2,minmax(0,1fr))}.student-roster-filter-form .student-live-search{grid-column:auto}}
+@media(max-width:650px){.student-roster-filter-form{grid-template-columns:1fr;gap:14px}.contact-update-panel{padding:16px}.contact-update-panel .contact-form>.btn{width:100%;justify-self:stretch}.contact-number{white-space:normal;overflow-wrap:anywhere}}
+@media(max-width:380px){.contact-gate-wrap{padding:12px}.contact-identity{grid-template-columns:1fr}.contact-gate-brand.brand{margin-bottom:18px}}

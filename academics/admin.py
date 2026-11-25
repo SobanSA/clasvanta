@@ -1,12 +1,33 @@
+from django import forms
 from django.contrib import admin
+from .contact_forms import WhatsAppNumberField
 from .models import Programme, AcademicTerm, ClassGroup, Subject, StudentProfile, ClassMembership, ClassSubject, WeeklySchedule
 
 admin.site.register(Programme)
 admin.site.register(AcademicTerm)
 admin.site.register(ClassGroup)
 admin.site.register(Subject)
-admin.site.register(StudentProfile)
 admin.site.register(ClassMembership)
+
+
+class StudentProfileAdminForm(forms.ModelForm):
+    whatsapp_number = WhatsAppNumberField(required=False)
+
+    class Meta:
+        model = StudentProfile
+        fields = '__all__'
+
+
+@admin.register(StudentProfile)
+class StudentProfileAdmin(admin.ModelAdmin):
+    form = StudentProfileAdminForm
+    list_display = ('user', 'father_name', 'whatsapp_number', 'contact_complete')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name', 'father_name', 'whatsapp_number')
+    list_select_related = ('user',)
+
+    @admin.display(boolean=True, description='Contact details complete')
+    def contact_complete(self, obj):
+        return obj.contact_details_complete
 
 
 @admin.register(ClassSubject)

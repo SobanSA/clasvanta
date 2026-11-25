@@ -3,6 +3,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 
+from .contact_details import normalize_whatsapp_number
+
 
 class Programme(models.Model):
     code = models.CharField(max_length=24, unique=True)
@@ -68,6 +70,32 @@ class Subject(models.Model):
 class StudentProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='student_profile')
     father_name = models.CharField(max_length=160, blank=True, default='')
+    whatsapp_number = models.CharField(max_length=16, blank=True, default='')
+
+    @property
+    def missing_father_name(self):
+        return not bool((self.father_name or '').strip())
+
+    @property
+    def missing_whatsapp_number(self):
+        return not bool((self.whatsapp_number or '').strip())
+
+    @property
+    def contact_details_complete(self):
+        return not (self.missing_father_name or self.missing_whatsapp_number)
+
+    @property
+    def whatsapp_local_number(self):
+        number = self.whatsapp_number or ''
+        return '0' + number[3:] if number.startswith('+923') else ''
+
+    def clean(self):
+        super().clean()
+        self.father_name = (self.father_name or '').strip()
+        try:
+            self.whatsapp_number = normalize_whatsapp_number(self.whatsapp_number)
+        except ValueError as exc:
+            raise ValidationError({'whatsapp_number': str(exc)}) from exc
 
     def __str__(self):
         return f'{self.user.get_full_name()} ({self.user.username})'

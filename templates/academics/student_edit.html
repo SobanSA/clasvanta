@@ -6,7 +6,7 @@
   <div>
     <span class="eyebrow">STUDENT DETAILS</span>
     <h1>Edit student</h1>
-    <p>Update identity details only. Class enrollment, attendance and fine history are not changed.</p>
+    <p>Update identity and contact details. Class enrollment, attendance and fine history are not changed.</p>
   </div>
   <a class="btn btn-secondary" href="{% url 'students_list' %}">Back to enrolled students</a>
 </div>
@@ -18,7 +18,10 @@
     <label for="editStudentName">Student name</label>
     <input id="editStudentName" name="student_name" value="{{ student.user.get_full_name|default:student.user.first_name }}" required autocomplete="name">
     <label for="editFatherName">Father name <span class="muted">(optional)</span></label>
-    <input id="editFatherName" name="father_name" value="{{ student.father_name }}" autocomplete="off">
+    <input id="editFatherName" name="father_name" value="{{ student.father_name }}" maxlength="160" autocomplete="off">
+    <label for="editWhatsApp">WhatsApp number <span class="muted">(optional)</span></label>
+    <input id="editWhatsApp" name="whatsapp_number" type="tel" inputmode="tel" value="{{ student.whatsapp_number }}" maxlength="64" placeholder="03001234567" autocomplete="tel">
+    <small class="help-text">Leaving either contact field blank will require the student to complete it before accessing their portal.</small>
     <p class="help-text">Changing the registration number also changes the student's login ID. Existing attendance, fines and enrollment records stay linked to the same student profile.</p>
     <div class="hero-actions">
       <button class="btn btn-primary" type="submit">Save student details</button>

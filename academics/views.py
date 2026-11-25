@@ -12,6 +12,7 @@ from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from accounts.models import User
@@ -19,6 +20,7 @@ from accounts.views import role_required
 from attendance.models import AttendanceAudit, AttendanceRecord, AttendanceSettings, LectureSession, MakeupClass
 from fines.models import FineLedgerEntry, FinePolicy
 from fines.services import reconcile_fine
+from .contact_details import normalize_whatsapp_number
 from .imports import import_students, import_structure, parse_upload, validate_rows, _password
 from .scheduling import check_teacher_schedule, check_class_section_join
 from .models import AcademicTerm, AppBranding, ClassGroup, ClassMembership, ClassSubject, Programme, StudentProfile, Subject, WeeklySchedule
@@ -461,6 +463,7 @@ def bulk_import(request, kind):
     })
 
 
+@never_cache
 @role_required('ADMIN','ACCOUNTS')
 def students_list(request):
     active = AcademicTerm.objects.filter(is_active=True).first()
@@ -497,8 +500,16 @@ def students_list(request):
                 ClassSubject.objects.filter(class_groups=group).select_related('subject','lecturer').distinct().order_by('subject__code')
             )
 
+    contact_filter = request.GET.get('contact', '')
+    if contact_filter not in ('complete', 'incomplete'):
+        contact_filter = ''
     rows=[]
     for m in memberships:
+        complete = m.student.contact_details_complete
+        if contact_filter == 'complete' and not complete:
+            continue
+        if contact_filter == 'incomplete' and complete:
+            continue
         rows.append({
             'membership': m,
             'offerings': class_subject_map.get(m.class_group_id, []),
@@ -510,6 +521,7 @@ def students_list(request):
         'groups': groups,
         'selected_programme': selected_programme,
         'selected_class': selected_class,
+        'contact_filter': contact_filter,
         'rows': rows,
         'student_count': len(rows),
     })
@@ -688,6 +700,7 @@ def student_delete(request, student_id):
         'can_delete': can_delete,
     })
 
+@never_cache
 @role_required('ADMIN','ACCOUNTS')
 @require_http_methods(['GET', 'POST'])
 def student_edit(request, student_id):
@@ -701,7 +714,6 @@ def student_edit(request, student_id):
         try:
             registration = request.POST['registration_number'].strip().upper()
             student_name = request.POST['student_name'].strip()
-            father_name = request.POST.get('father_name', '').strip()
 
             if not registration or not student_name:
                 raise ValueError('Registration number and student name are required.')
@@ -717,9 +729,13 @@ def student_edit(request, student_id):
                 user.full_clean()
                 user.save(update_fields=['username', 'first_name', 'last_name'])
 
-                locked.father_name = father_name
+                # Missing keys from old clients must not erase existing details.
+                if 'father_name' in request.POST:
+                    locked.father_name = request.POST['father_name'].strip()
+                if 'whatsapp_number' in request.POST:
+                    locked.whatsapp_number = normalize_whatsapp_number(request.POST['whatsapp_number'])
                 locked.full_clean()
-                locked.save(update_fields=['father_name'])
+                locked.save(update_fields=['father_name', 'whatsapp_number'])
 
             messages.success(request, 'Student details updated.')
             return redirect('students_list')
@@ -805,6 +821,7 @@ def student_attendance(request):
     })
 
 
+@never_cache
 @role_required('ADMIN','ACCOUNTS')
 @require_http_methods(['GET','POST'])
 def student_add(request):
@@ -819,6 +836,7 @@ def student_add(request):
             reg = request.POST['registration_number'].strip().upper()
             name = request.POST['student_name'].strip()
             father_name = request.POST.get('father_name', '').strip()
+            whatsapp_number = normalize_whatsapp_number(request.POST.get('whatsapp_number', ''))
             group = ClassGroup.objects.get(pk=int(request.POST['class_group']), term=active)
             if not reg or not name:
                 raise ValueError('Registration number and student name are required.')
@@ -829,13 +847,15 @@ def student_add(request):
                 user = User(username=reg, first_name=name, role='STUDENT', must_change_password=True)
                 user.set_password(password)
                 user.full_clean(); user.save()
-                profile = StudentProfile.objects.create(user=user, father_name=father_name)
+                profile = StudentProfile(user=user, father_name=father_name, whatsapp_number=whatsapp_number)
+                profile.full_clean(); profile.save()
                 membership = ClassMembership(student=profile, term=active, class_group=group)
                 membership.full_clean(); membership.save()
             request.session['new_student'] = {
                 'registration_number': reg,
                 'student_name': name,
                 'father_name': father_name,
+                'whatsapp_number': whatsapp_number,
                 'class_code': group.code,
                 'password': password,
             }

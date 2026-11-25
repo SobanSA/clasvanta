@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
+{% load static %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/student_contact.css' %}?v=289">{% endblock %}
 {% block title %}My Profile | {{ app_branding.app_name }}{% endblock %}
 {% block crumb %}My Profile{% endblock %}
 {% block content %}
 <div class="page-heading student-page-heading">
   <span class="eyebrow">STUDENT PORTAL</span>
   <h1>My Profile</h1>
-  <p>Academic enrollment details and regular weekly timetable are read-only.</p>
+  <p>Academic enrollment details are read-only. Keep your active WhatsApp number up to date.</p>
 </div>
 
 <div class="student-profile-layout">
@@ -17,6 +19,8 @@
     <div class="student-profile-fields">
       <div><span>Student name</span><strong>{{ user.get_full_name|default:'—' }}</strong></div>
       <div><span>Registration number</span><strong>{{ user.username }}</strong></div>
+      <div><span>Father's name</span><strong>{{ profile.father_name }}</strong><small>Contact administration for corrections.</small></div>
+      <div><span>WhatsApp number</span><strong>{{ profile.whatsapp_number }}</strong></div>
       <div><span>Programme</span><strong>{% if membership %}{{ membership.class_group.programme.name }}{% else %}—{% endif %}</strong>{% if membership %}<small>{{ membership.class_group.programme.code }}</small>{% endif %}</div>
       <div><span>Class</span><strong>{% if membership %}{{ membership.class_group.name }}{% else %}—{% endif %}</strong>{% if membership %}<small>{{ membership.class_group.code }}</small>{% endif %}</div>
       <div><span>Academic term</span><strong>{% if membership %}{{ membership.term.name }}{% else %}—{% endif %}</strong></div>
@@ -31,6 +35,21 @@
     <a class="btn btn-primary" href="{% url 'password_change' %}">Change password</a>
   </aside>
 </div>
+
+<section class="panel contact-update-panel" aria-labelledby="whatsapp-title">
+  <div class="panel-head"><div><h2 id="whatsapp-title">Update WhatsApp number</h2><p class="help-text">Only your WhatsApp number can be changed here. Name, registration number and father's name remain administrator-controlled.</p></div></div>
+  <form method="post" action="{% url 'student_update_whatsapp' %}" class="stack-form contact-form">
+    {% csrf_token %}
+    {{ whatsapp_form.non_field_errors }}
+    <div class="contact-form-field">
+      <label for="{{ whatsapp_form.whatsapp_number.id_for_label }}">Active WhatsApp number</label>
+      {{ whatsapp_form.whatsapp_number }}
+      <small id="{{ whatsapp_form.whatsapp_number.auto_id }}_helptext" class="help-text">{{ whatsapp_form.whatsapp_number.help_text }}</small>
+      {{ whatsapp_form.whatsapp_number.errors }}
+    </div>
+    <button type="submit" class="btn btn-primary">Save WhatsApp number</button>
+  </form>
+</section>
 
 <section class="profile-workload-section">
   <div class="section-heading">

@@ -2,7 +2,7 @@
 
 **Academic Attendance & Management**
 
-Clasvanta is a Django-based academic attendance management system for administrators, lecturers, accounts staff, and students. This repository contains the **consolidated v2.8.8 source**: the historical patch releases and the live maintenance patches have been folded into the application files, so a fresh download does **not** require running any `apply_patch.py` or `install_*.py` scripts.
+Clasvanta is a Django-based academic attendance management system for administrators, lecturers, accounts staff, and students. This repository contains the **consolidated v2.8.9 source**: the historical patch releases and the live maintenance patches have been folded into the application files, so a fresh download does **not** require running any `apply_patch.py` or `install_*.py` scripts.
 
 ## Current capabilities
 
@@ -19,7 +19,7 @@ Clasvanta is a Django-based academic attendance management system for administra
 - Student portal: dashboard, attendance, schedule, fines, profile, and weekly timetable
 - Lecturer profile with regular weekly teaching workload
 - Student management: add, edit, activate/deactivate, safe delete, and explicitly confirmed force delete
-- Optional student father name and father-name search support
+- Compulsory student contact completion: father name and active WhatsApp number, plus staff search/filter support
 - Accounts role with restricted student/fine access and read-only fine access
 - Fine reconciliation based on absences from Held classes
 - Super Admin fine concession and current-balance waiver with append-only ledger history
@@ -59,7 +59,7 @@ Lecturers can see today's lectures, mark attendance within the configured rules,
 
 ### Student
 
-Students have read-only academic views for their dashboard, attendance, schedule, weekly timetable, fines, and profile, plus password management.
+Students have read-only academic views for their dashboard, attendance, schedule, weekly timetable and fines. After any required password change, they must complete their missing contact details. They can update their WhatsApp number and password, but identity and academic details are administrator-controlled.
 
 ## Attendance semantics
 
@@ -168,7 +168,20 @@ python manage.py check
 python manage.py makemigrations --check --dry-run
 ```
 
+## Student contact details (v2.8.9)
+
+All students must provide a father's name and an active WhatsApp number before accessing their student portal. Forced password change always takes priority. Existing details are preserved; only missing fields are requested. The student may supply a missing father's name once, but cannot edit the saved name, registration ID or academic details. The WhatsApp number can be changed at any time from My Profile; it cannot be cleared by the student. Admin and Accounts users can add or correct these fields and filter/search the enrolled roster. The database migration adds an optional `whatsapp_number` field without altering historical records. Phone numbers are normalized and syntax-checked; no OTP or WhatsApp API is used. Keep contact details private and restrict access to authorized staff.
+
 ## Release history
+
+### v2.8.9 — Compulsory student contact completion
+
+- Added a server-side completion gate for existing and new students, after the forced-password-change step.
+- Collect only missing father's name and WhatsApp number; no skip option. Previously saved father's names remain locked to students.
+- Student self-service WhatsApp updates, normalized Pakistani/international formats, and backend validation.
+- Admin/Accounts optional contact entry/correction and roster display, search and completion filtering.
+- New migration `academics/migrations/0008_studentprofile_whatsapp_number.py`. No manual SQL or data reset.
+- Added regression tests for onboarding, direct URL protection, permissions, validation and contact management.
 
 ### v2.8.8 — App icon refresh
 

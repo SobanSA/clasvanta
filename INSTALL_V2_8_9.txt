@@ -1,0 +1,104 @@
+CLASVANTA v2.8.9 — COMPULSORY STUDENT CONTACT COMPLETION
+FileZilla-ready incremental patch for v2.8.8
+=========================================================
+Base: merged v2.8.8 main commit 991ae53d0b91a8fa2aa124139a59958196653705;
+compared against the provided live v2.8.8 backup.
+
+WHAT THIS PATCH DOES
+- Forces all existing and new student accounts to complete missing father's
+  name and active WhatsApp number after any compulsory password change.
+- All academic student routes are gated server-side, including direct URLs.
+  No Skip option; Sign out is available. Completed students are not prompted.
+- Students may enter missing father name once; after saving it cannot be
+  changed by them. Existing name and registration ID remain read-only.
+- Students may update a nonblank valid WhatsApp number anytime in My Profile.
+- Admin / Accounts can enter and correct both contact fields. Enrolled students
+  includes the WhatsApp column, search and complete/incomplete filter.
+- Pakistani local 03XXXXXXXXX becomes +923XXXXXXXXX. International format with
+  + or 00 is also accepted. Validation is syntactic, NOT OTP/account verification.
+- Existing attendance, timetable, fines and enrolment are unchanged. Existing
+  father names are preserved. There are no new Python dependencies.
+
+BEFORE UPLOADING
+1. Confirm your server is running v2.8.8 (academics migration 0007 exists).
+2. Back up the entire application directory and the MariaDB database separately.
+   Keep the backups outside the web root. Schedule a short maintenance window.
+   Stop/disable the Python application if possible while files and schema change.
+3. Extract this ZIP on your PC. In FileZilla, open the server's attendance_app/
+   directory — the directory that already contains manage.py.
+4. Upload academics/, attendance/, config/, static/, templates/ and README.md
+   from the extracted ZIP into that directory. Merge directories and overwrite
+   matching files; do not delete other files or upload the containing ZIP folder.
+   INSTALL_V2_8_9.txt and PATCH_MANIFEST_V2_8_9.txt are local instructions only.
+   Do NOT replace config/settings.py, .env, virtualenv, public/, private/,
+   database, existing migrations, or production-specific files.
+
+SERVER COMMANDS (in the directory containing manage.py)
+Use the same Plesk application environment as your existing deployment. From
+that directory, activate its existing virtual environment if not already active:
+
+  source .venv/bin/activate
+  python manage.py check
+  python manage.py makemigrations --check --dry-run
+
+Run the isolated SQLite regression tests BEFORE enabling the new code:
+
+  DJANGO_SECRET_KEY=test-only-local-secret python manage.py test --settings=config.test_settings
+
+Do not use production settings for test commands. The environment assignment
+above is for that test command only; it does not change your live secret.
+If a check/test fails, do not continue; capture the error and investigate.
+
+  python manage.py migrate --plan
+
+Expected pending migration for an up-to-date v2.8.8 database:
+  academics.0008_studentprofile_whatsapp_number
+Review any additional migrations before proceeding. Then:
+
+  python manage.py migrate
+  python manage.py collectstatic --noinput
+  python manage.py check
+  python manage.py showmigrations academics
+
+Verify 0008 is marked [X]. Restart the Python application in Plesk (or use
+its normal restart process). Do NOT run makemigrations without --check
+--dry-run: the migration is already supplied. No manual SQL or reset needed.
+
+MANUAL ACCEPTANCE TESTS
+Use disposable test accounts and no real student contact details in test records.
+- Existing student with both fields blank: login -> completion, both required.
+- Student with father name only: WhatsApp field only. Student cannot edit father.
+- Student with WhatsApp only: father's name field only. Existing number preserved.
+- Student with both values: direct dashboard; no profile completion prompt.
+- New student with temporary password: forced password change first, then
+  completion if necessary. Sign out works on completion screen.
+- Directly visit /student/attendance/, /student/schedule/, /student/fines/,
+  /student/profile/ and /dashboard/ while incomplete: each redirects to completion.
+- Submit an invalid/blank number: error, no unlock. Complete valid details:
+  dashboard, attendance, timetable and fines work as before.
+- Open My Profile: verify name, registration, father name and weekly lectures;
+  change WhatsApp successfully, try a blank/invalid value (must not save).
+- Admin/Accounts: add/edit contact details, search number in enrolled roster,
+  filter incomplete/complete, clear a field on a test account and verify re-gate.
+- Other roles: lecturer and admin access remain unaffected.
+
+VALIDATION STATUS FOR THIS ZIP
+- Independent phone-format tests: 4/4 test methods passed.
+- Python 3.10 syntax: 71 reconstructed source files passed.
+- Template block/URL reference checks and CSS parsing passed.
+- Static Chromium fixture of the completion screen: no horizontal overflow at
+  320, 375, 414, 768 and 1366 px. This was a layout fixture, not a Django render.
+- 15 new Django integration tests are included; existing test fixtures
+  have been updated to model complete students. The full Django suite and
+  actual migration have NOT been executed for v2.8.9 in this sandbox because
+  Django is unavailable and dependency downloads are blocked. Run the SQLite
+  test command above before production activation. v2.8.8's previous test
+  results are not proof that the v2.8.9 patch passes.
+- No changes pushed to GitHub by this patch development.
+
+ROLLBACK
+If a pre-deployment check fails, restore the backed-up source files before
+restarting. If 0008 was already applied, the extra database column is additive;
+leave it and its migration history in place to preserve newly supplied numbers.
+Do not reverse the migration or restore an old DB backup over newer records
+without reviewing the impact. Consult the administrator if rollback is needed.

@@ -1,0 +1,53 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f6f8fc">
+  <title>Complete your profile | {{ app_branding.app_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=281">
+  <link rel="stylesheet" href="{% static 'css/student_contact.css' %}?v=289">
+  <link rel="icon" type="image/png" href="{% static 'pwa/favicon-64.png' %}?v=288">
+</head>
+<body class="contact-gate-body">
+  <main class="contact-gate-wrap">
+    <section class="panel contact-gate-card" aria-labelledby="contact-title">
+      <div class="contact-gate-brand brand">
+        <span class="brand-mark">{{ app_branding.app_name|slice:':1'|upper }}</span>
+        <span><strong>{{ app_branding.app_name }}</strong><small>{{ app_branding.subtitle }}</small></span>
+      </div>
+      {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}" role="status">{{ message }}</div>
+      {% endfor %}
+      <span class="eyebrow">REQUIRED PROFILE DETAILS</span>
+      <h1 id="contact-title">Complete your profile</h1>
+      <p class="contact-intro">Provide the missing details below to access attendance, schedules and the rest of your student portal.</p>
+      <dl class="contact-identity">
+        <div><dt>Student name</dt><dd>{{ user.get_full_name|default:user.username }}</dd></div>
+        <div><dt>Registration number</dt><dd>{{ user.username }}</dd></div>
+        {% if not profile.missing_father_name %}<div><dt>Father's name</dt><dd>{{ profile.father_name }}</dd></div>{% endif %}
+        {% if not profile.missing_whatsapp_number %}<div><dt>WhatsApp number</dt><dd>{{ profile.whatsapp_number }}</dd></div>{% endif %}
+      </dl>
+      <form method="post" action="{% url 'student_complete_profile' %}" class="stack-form contact-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+        <div class="contact-form-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }} <span aria-hidden="true">*</span></label>
+          {{ field }}
+          {% if field.help_text %}<small id="{{ field.auto_id }}_helptext" class="help-text">{{ field.help_text }}</small>{% endif %}
+          {{ field.errors }}
+        </div>
+        {% endfor %}
+        <p class="contact-privacy-note">Your institution will use these details for student records and communication. You can update your WhatsApp number from My Profile after completing this step.</p>
+        <button class="btn btn-primary btn-full" type="submit">Save and continue</button>
+      </form>
+      <form class="contact-signout" method="post" action="{% url 'logout' %}">
+        {% csrf_token %}<button type="submit" class="text-button">Sign out</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

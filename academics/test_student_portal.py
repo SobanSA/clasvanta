@@ -49,8 +49,8 @@ class StudentPortalV27Tests(TestCase):
             username='REG-SECRET-002', password='Example123!', role=User.Role.STUDENT,
             first_name='Other Student Secret',
         )
-        self.student = StudentProfile.objects.create(user=self.student_user)
-        self.other_student = StudentProfile.objects.create(user=self.other_user)
+        self.student = StudentProfile.objects.create(user=self.student_user, father_name='Primary Father', whatsapp_number='+923001234567')
+        self.other_student = StudentProfile.objects.create(user=self.other_user, father_name='Other Father', whatsapp_number='+923001234568')
         ClassMembership.objects.create(
             student=self.student, term=self.term, class_group=self.class_a,
         )

@@ -8,25 +8,30 @@ from datetime import date
 from decimal import Decimal
 from functools import wraps
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_GET
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from accounts.models import User
 from attendance.models import AttendanceRecord, LectureSession, MakeupClass
 from fines.models import FineLedgerEntry, FinePolicy
 from fines.services import subject_balance
 
+from .contact_forms import ContactCompletionForm, WhatsAppUpdateForm
 from .models import ClassMembership, ClassSubject, StudentProfile, WeeklySchedule
 from .workload import weekly_workload_for_offerings
 
 
-def student_required(view_func):
-    """Allow only real student accounts and preserve forced-password-change flow."""
+def student_account_required(view_func):
+    """Require a student account and preserve password-change priority."""
     @login_required
+    @never_cache
     @wraps(view_func)
     def wrapped(request, *args, **kwargs):
         if request.user.must_change_password:
@@ -35,6 +40,51 @@ def student_required(view_func):
             raise PermissionDenied('This page is available to student accounts only.')
         return view_func(request, *args, **kwargs)
     return wrapped
+
+
+def student_required(view_func):
+    """Gate every academic portal view, including direct URLs and POSTs."""
+    @student_account_required
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        if not profile.contact_details_complete:
+            return redirect('student_complete_profile')
+        return view_func(request, *args, **kwargs)
+    return wrapped
+
+
+@student_account_required
+@require_http_methods(['GET', 'POST'])
+def complete_profile(request):
+    """Save missing details once; never accept a student identifier or identity edits."""
+    if request.method == 'POST':
+        # Re-read the actual values under a row lock so stale forms, double
+        # submissions and simultaneous administrator edits cannot overwrite a
+        # populated father's name or WhatsApp number on the completion route.
+        with transaction.atomic():
+            profile = get_object_or_404(
+                StudentProfile.objects.select_for_update(), user=request.user,
+            )
+            if profile.contact_details_complete:
+                return redirect('dashboard')
+            form = ContactCompletionForm(profile, request.POST)
+            if form.is_valid():
+                fields = list(form.cleaned_data)
+                for field in fields:
+                    setattr(profile, field, form.cleaned_data[field])
+                profile.save(update_fields=fields)
+                messages.success(request, 'Your profile is complete. You can now access the student portal.')
+                return redirect('dashboard')
+    else:
+        profile = get_object_or_404(StudentProfile, user=request.user)
+        if profile.contact_details_complete:
+            return redirect('dashboard')
+        form = ContactCompletionForm(profile)
+
+    return render(request, 'student/complete_profile.html', {
+        'profile': profile, 'form': form,
+    })
 
 
 def _student_scope(user):
@@ -368,16 +418,42 @@ def my_fines(request):
     })
 
 
-@student_required
-@require_GET
-def profile(request):
+def _render_profile(request, whatsapp_form=None):
     profile_obj, membership = _student_scope(request.user)
     offerings = _assigned_offerings(membership)
     assigned_subject_count = len(offerings) if membership else 0
     weekly = weekly_workload_for_offerings(offerings)
+    if whatsapp_form is None:
+        whatsapp_form = WhatsAppUpdateForm(initial={'whatsapp_number': profile_obj.whatsapp_number})
     return render(request, 'student/profile.html', {
         'profile': profile_obj,
         'membership': membership,
         'assigned_subject_count': assigned_subject_count,
         'weekly': weekly,
+        'whatsapp_form': whatsapp_form,
     })
+
+
+@student_required
+@require_GET
+def profile(request):
+    return _render_profile(request)
+
+
+@student_required
+@require_POST
+def update_whatsapp(request):
+    """The only student-editable field after compulsory completion."""
+    form = WhatsAppUpdateForm(request.POST)
+    if form.is_valid():
+        with transaction.atomic():
+            profile_obj = get_object_or_404(
+                StudentProfile.objects.select_for_update(), user=request.user,
+            )
+            if not profile_obj.contact_details_complete:
+                return redirect('student_complete_profile')
+            profile_obj.whatsapp_number = form.cleaned_data['whatsapp_number']
+            profile_obj.save(update_fields=['whatsapp_number'])
+        messages.success(request, 'Your WhatsApp number has been updated.')
+        return redirect('student_profile')
+    return _render_profile(request, whatsapp_form=form)

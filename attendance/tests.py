@@ -38,7 +38,7 @@ class LecturerAttendanceWorkflowTests(TestCase):
             account = User.objects.create_user(
                 username=f'STU{n}', password='Example123!', role=User.Role.STUDENT,
             )
-            profile = StudentProfile.objects.create(user=account)
+            profile = StudentProfile.objects.create(user=account, father_name=f'Test Father {n}', whatsapp_number=f'+92300123456{n}')
             ClassMembership.objects.create(student=profile, class_group=group, term=self.term)
             self.students.append(profile)
         self.subject = Subject.objects.create(code='ENG', name='English', short_name='English')
