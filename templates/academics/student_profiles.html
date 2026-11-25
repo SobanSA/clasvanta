@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Student profiles | {{ app_branding.app_name }}{% endblock %}
 {% block crumb %}Students / Student profiles{% endblock %}
-{% block head %}<link rel="stylesheet" href="{% static 'css/staff_student_profiles.css' %}?v=2810">{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/staff_student_profiles.css' %}?v=2810-search1">{% endblock %}
 {% block content %}
 <div class="page-heading heading-row"><div><span class="eyebrow">STUDENT MANAGEMENT</span><h1>Student profiles</h1><p>Find an individual student and review their academic and account details.</p></div><a href="{% url 'students_list' %}" class="btn btn-secondary">Enrolled students</a></div>
 {% include 'academics/_student_profile_search.html' %}

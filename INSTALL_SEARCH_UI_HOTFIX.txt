@@ -1,0 +1,31 @@
+CLASVANTA v2.8.10 - STUDENT PROFILES SEARCH UI HOTFIX
+
+Prerequisite: v2.8.10 is already installed.
+
+This is a cosmetic-only fix for the Student Profiles search field. It matches
+the existing Student Attendance search styling and keeps the current POST
+search, permissions, data and database unchanged.
+
+FILEZILLA
+Back up the three existing files listed below. Extract this ZIP and upload
+the static/ and templates/ folders into the application root containing
+manage.py. Choose Overwrite. Do not delete existing directories.
+
+Files replaced:
+  static/css/staff_student_profiles.css
+  templates/academics/student_profiles.html
+  templates/academics/student_profile_detail.html
+The template changes only bump the stylesheet cache version. This guide
+is for reference and does not need to be uploaded.
+
+COMMANDS (from the application root)
+  source .venv/bin/activate
+  python manage.py collectstatic --noinput
+  python manage.py check
+
+Restart the Python application in Plesk, then reload Student Profiles
+(Ctrl+F5 on desktop if necessary). No migration or pip install is needed.
+
+Validation: CSS parsed and Chromium mock-form layout/focus checked at
+320, 390, 650, 768, 1024 and 1440 pixels. Not tested against a live Django
+server. No Python, database, credential or GitHub changes.
